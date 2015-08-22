@@ -23,6 +23,8 @@ class MonsterScene extends GameScene {
         height: 300,
         gravity: .3
     }
+
+    var scrollX:Float = 0;
        
     public function new () {
 
@@ -33,9 +35,13 @@ class MonsterScene extends GameScene {
                 return new FState<GameObject,GameEvent>(name);
             });
 
+        var blankType = new ObjectType();
+        var playerType = new ObjectType();
+        var enemyType = new ObjectType();
+
         var headOptions = {
             image: "assets/head.png",
-            height: 100,
+            height: 130,
             jumpStrength: -10,
             z: -2
         };
@@ -46,6 +52,7 @@ class MonsterScene extends GameScene {
             bobHeight:10,
             bobSpeed: 2,
             followSpeed: 1/6,
+            type:blankType,
             z: -1
         };
 
@@ -55,6 +62,7 @@ class MonsterScene extends GameScene {
             bobHeight:10,
             bobSpeed: 3,
             followSpeed: 1/6,
+            type:blankType,
             z: -5
         };
 
@@ -64,6 +72,7 @@ class MonsterScene extends GameScene {
             bobHeight:10,
             bobSpeed: 4,
             followSpeed: 1/2,
+            type:playerType,
             z: -3
         };
 
@@ -72,10 +81,6 @@ class MonsterScene extends GameScene {
             .registerAxis(KeyboardKeys.UP,KeyboardKeys.DOWN,'y')
             .registerInput(KeyboardKeys.Z,'jump')
         ;
-
-        var blankType = new ObjectType();
-        var playerType = new ObjectType();
-        var enemyType = new ObjectType();
 
         addGenerator("player",function()
             {
@@ -113,7 +118,7 @@ class MonsterScene extends GameScene {
                     .setAttribute('bobSpeed',args[0].bobSpeed)
                     .setAttribute('followSpeed',args[0].followSpeed)
                     .setAttribute('head',args[1])
-                    .addType(playerType)
+                    .addType(args[0].type)
                     .setZ(args[0].z)
                 ;
             });
@@ -127,7 +132,7 @@ class MonsterScene extends GameScene {
                     .setAttribute('width',12)
                     .addType(blankType)
                     .setX(args[0])
-                    .setY(sceneOptions.height/2 - 6)
+                    .setY(sceneOptions.height/2 - 33)
                     .setZ(-10)
                 ;
             });
@@ -163,15 +168,27 @@ class MonsterScene extends GameScene {
 
         addGenerator("soldier",function()
             {
-                var pos = Math.random()*5;
+                var pos = Math.random()*30;
                 return (new GameObject())
-                    .setPosition(new Vec2(sceneOptions.width/2 + Math.random()*100,sceneOptions.height/2 - 7 - pos))
+                    .setPosition(new Vec2(sceneOptions.width/2 + Math.random()*100,sceneOptions.height/2 - 20 - pos))
                     .setGraphic(SpriteSheet("assets/soldier-runcycle.png", 16,14, [0,1,2,3],5, true))
                     .setState(states.get('soldierNormal'))
                     .addType(enemyType)
-                    .setZ(pos)
+                    .setZ(pos/1000)
                 ;
             });
+
+        states.get('scroll')
+            .setStart(function(obj:GameObject)
+                {
+                    obj.setAttribute('scrolledAmount',0.0);
+                })
+            .setUpdate(function(obj:GameObject)
+                {
+                    obj.translateX(scrollX - obj.getAttribute('scrolledAmount'));
+                    obj.setAttribute('scrolledAmount',scrollX);
+                })
+        ;
 
         states.get('background')
             .setUpdate(function(obj:GameObject)
@@ -184,6 +201,7 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('loopingBackground')
+            .addParent(states.get('scroll'))
             .setUpdate(function(obj:GameObject)
                 {
                     if(obj.position.x + obj.getAttribute('width') < -sceneOptions.width/2)
@@ -194,13 +212,16 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('playerHeadControl')
+            .addParent(states.get('scroll'))
             .setUpdate(function(obj:GameObject)
                 {
+                    scrollX += -obj.position.x/10;
                     obj.setAngularVel((input.getAxis('y')*30 - obj.angle)/10);
                 })
         ;
 
         states.get('playerNormalAir')
+            .addParent(states.get('scroll'))
             .setUpdate(function(obj:GameObject)
                 {
                     if(obj.position.y > sceneOptions.height/2 - headOptions.height)
@@ -220,6 +241,7 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('playerNormalGround')
+            .addParent(states.get('scroll'))
             .setUpdate(function(obj:GameObject)
                 {
                     // obj.angle += .2;
@@ -232,6 +254,7 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('playerJump')
+            .addParent(states.get('scroll'))
             .setStart(function(obj:GameObject)
                 {
                     obj
@@ -243,6 +266,7 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('restingBob')
+            .addParent(states.get('scroll'))
             .setUpdate(function(obj:GameObject)
                 {
                     var targetPosition:Vec2 = obj.getAttribute('head').position;
@@ -268,6 +292,7 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('soldierNormal')
+            .addParent(states.get('scroll'))
             .setStart(function(obj:GameObject)
                 {
                     obj.setVelocityX(-1);
@@ -283,6 +308,7 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('soldierFire')
+            .addParent(states.get('scroll'))
             .setStart(function(obj:GameObject)
                 {
                     obj
