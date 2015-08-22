@@ -118,6 +118,7 @@ class MonsterScene extends GameScene {
         addGenerator("soldier",function()
             {
                 return (new GameObject())
+                    .setPosition(new Vec2(sceneOptions.width/2 + Math.random()*100,sceneOptions.height/2 - 7))
                     .setGraphic(SpriteSheet("assets/soldier-runcycle.png", 16,14, [0,1,2,3],5, true))
                     // .setScale(1/4)
                     .setState(states.get('soldierNormal'))
@@ -156,7 +157,6 @@ class MonsterScene extends GameScene {
         states.get('playerJump')
             .setStart(function(obj:GameObject)
                 {
-                    trace('pls');
                     obj
                         .setY(sceneOptions.height/2 - headOptions.height - 1)
                         .setVelocityY(headOptions.jumpStrength)
@@ -191,7 +191,17 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('soldierNormal')
-
+            .setStart(function(obj:GameObject)
+                {
+                    obj.setVelocityX(-3);
+                })
+            .setUpdate(function(obj:GameObject)
+                {
+                    if(obj.position.x < -sceneOptions.width/2 - 10)
+                    {
+                        delete(obj);
+                    }
+                })
         ;
 
     }
@@ -200,11 +210,13 @@ class MonsterScene extends GameScene {
     public override function onStart()
     {
         generate('player');
-        generate('soldier');
     }
 
     public override function onUpdate()
     {
         bobCounter += .01;
+        generate('soldier');
+        generate('soldier');
+        generate('soldier');
     }
 }
