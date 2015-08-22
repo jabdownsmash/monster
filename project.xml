@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project>
+	
+	<meta title="Monster" package="com.sample.monster" version="1.0.0" company="Company Name" />
+	<app main="Main" path="Export" file="Monster" />
+	
+	<source path="Source" />
+	
+	<haxelib name="lime" />
+	<haxelib name="fluidity2" />
+	<haxelib name="evsm" />
+	<haxelib name="nape" />
+	<haxelib name="gtoolbox" />
+	
+	<assets path="Assets" rename="assets" />
+	
+</project>

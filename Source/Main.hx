@@ -1,0 +1,109 @@
+
+package;
+
+import lime.app.Application;
+import lime.graphics.RenderContext;
+import lime.ui.KeyCode;
+import lime.ui.KeyModifier;
+
+import fluidity2.Backend;
+import fluidity2.backends.*;
+import fluidity2.GameScene;
+import fluidity2.GameObject;
+
+import gtoolbox.LimeInput;
+
+import lime.graphics.opengl.GL;
+import lime.graphics.opengl.GLProgram;
+
+import lime.Assets;
+
+
+class Main extends Application {
+	
+	var scene:GameScene;
+
+	var started = false;
+
+	var limeInput:LimeInput;
+
+	public static var randomColor:Bool = false;
+
+	public static var drawColorR:Float = 1;
+	public static var drawColorG:Float = 1;
+	public static var drawColorB:Float = 1;
+	public static var drawColorA:Float = 1;
+	
+	public function new () {
+		
+		super ();
+		
+	}
+
+	public override function render (context:RenderContext):Void {
+
+		if(!started)
+		{
+			var customRenderer = new CustomRenderer();
+			customRenderer.fragmentSource = 
+	            
+	            #if !desktop
+	            "precision mediump float;" +
+	            #end
+	            "varying vec2 vTexCoord;
+	            uniform sampler2D uImage0;
+	            uniform vec4 uColor;
+
+	            
+	            void main(void)
+	            {
+
+	                gl_FragColor = texture2D(uImage0, vTexCoord) * uColor;
+	            }";
+
+	      	var colorUniform;
+
+            customRenderer.customInitFunc = function(program:GLProgram) {
+
+			        colorUniform = GL.getUniformLocation (program, "uColor");
+			    };
+
+			customRenderer.customRenderPreFunc = function(obj:GameObject) {
+					if(randomColor)
+					{
+			        	GL.uniform4f (colorUniform, Math.random()/2 + .5,Math.random()/2 + .5,Math.random()/2 + .5,1);
+					}
+					else
+					{
+			        	GL.uniform4f (colorUniform, drawColorR,drawColorB,drawColorG,drawColorA);
+					}
+				};
+
+			started = true;
+
+			
+			var lgb = new LimeGraphicsBackend(window);
+			lgb.setCustom(customRenderer);
+
+			Backend.graphics = lgb;
+			Backend.physics = new SimplePhysicsBackend();
+			limeInput = new LimeInput();
+			Backend.input = limeInput;
+
+			scene = new MonsterScene();
+
+			scene.start();
+		}
+		scene.update();
+		scene.render();
+	}
+	
+	
+	public override function onKeyDown (key:KeyCode, modifier:KeyModifier):Void {
+		limeInput.limeOnKeyDown(key);
+	}
+	public override function onKeyUp (key:KeyCode, modifier:KeyModifier):Void {
+		limeInput.limeOnKeyUp(key);
+	}
+	
+}
