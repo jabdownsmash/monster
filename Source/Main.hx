@@ -57,8 +57,12 @@ class Main extends Application {
 	            
 	            void main(void)
 	            {
+	                vec4 texel = texture2D(uImage0, vTexCoord) * uColor;
+	            	
+					if(texel.a < 0.5)
+					    discard;
+					gl_FragColor = texel;
 
-	                gl_FragColor = texture2D(uImage0, vTexCoord) * uColor;
 	            }";
 
 	      	var colorUniform;

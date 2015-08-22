@@ -12,9 +12,11 @@ import nape.geom.Vec2;
 import evsm.FState;
 
 import gtoolbox.KeyboardKeys;
-
+import gtoolbox.Input;
 
 class MonsterScene extends GameScene {
+
+    var bobCounter = 0.0;
        
     public function new () {
 
@@ -25,9 +27,17 @@ class MonsterScene extends GameScene {
                 return new FState<GameObject,GameEvent>(name);
             });
 
+        var sceneOptions = {
+            width: 800,
+            height: 600,
+            gravity: .3
+        }
+
         var headOptions = {
             image: "assets/head.png",
-            startPosition: new Vec2(100,200)
+            height: 100,
+            jumpStrength: -10,
+            z: -2
         };
 
         var rightArmOptions = {
@@ -35,7 +45,8 @@ class MonsterScene extends GameScene {
             restingPosition: new Vec2(-40,70),
             bobHeight:10,
             bobSpeed: 2,
-            followSpeed: 1/6
+            followSpeed: 1/6,
+            z: -1
         };
 
         var leftArmOptions = {
@@ -43,7 +54,8 @@ class MonsterScene extends GameScene {
             restingPosition: new Vec2(30,70),
             bobHeight:10,
             bobSpeed: 3,
-            followSpeed: 1/6
+            followSpeed: 1/6,
+            z: -5
         };
 
         var bodyOptions = {
@@ -51,12 +63,14 @@ class MonsterScene extends GameScene {
             restingPosition: new Vec2(-10,60),
             bobHeight:10,
             bobSpeed: 4,
-            followSpeed: 1/2
+            followSpeed: 1/2,
+            z: -3
         };
 
         input
             .registerAxis(KeyboardKeys.LEFT,KeyboardKeys.RIGHT,'x')
             .registerAxis(KeyboardKeys.UP,KeyboardKeys.DOWN,'y')
+            .registerInput(KeyboardKeys.Z,'jump')
         ;
 
         var playerType = new ObjectType();
@@ -66,13 +80,21 @@ class MonsterScene extends GameScene {
                 var head:GameObject = (new GameObject())
                     .setGraphic(Image(headOptions.image))
                     .setScale(1/4)
-                    .setState(states.get('playerNormal'))
+                    .setState(states.get('playerNormalAir'))
                     .addType(playerType)
+                    .setZ(headOptions.z)
+                ;
+
+                input                    
+                    .registerFunction(Input.ONKEYDOWN,'jump', function()
+                        {
+                            head.processEvent(new GameEvent("jump"));
+                        })
                 ;
 
                 generate("part",[rightArmOptions,head]);
-                generate("part",[leftArmOptions,head]);
                 generate("part",[bodyOptions,head]);
+                generate("part",[leftArmOptions,head]);
 
                 return head;
             });
@@ -89,6 +111,7 @@ class MonsterScene extends GameScene {
                     .setAttribute('followSpeed',args[0].followSpeed)
                     .setAttribute('head',args[1])
                     .addType(playerType)
+                    .setZ(args[0].z)
                 ;
             });
 
@@ -102,15 +125,43 @@ class MonsterScene extends GameScene {
                 ;
             });
 
-        var bobCounter = 0.0;
-
-        states.get('playerNormal')
+        states.get('playerNormalAir')
             .setUpdate(function(obj:GameObject)
                 {
-                    bobCounter += .01;
+                    if(obj.position.y > sceneOptions.height/2 - headOptions.height)
+                    {
+                        obj
+                            // .setY(sceneOptions.height/2 - headOptions.height)
+                            // .setVelocityY(0)
+                            .setState(states.get('playerNormalGround'))
+                        ;
+                    }
+
                     obj.velocity.setxy(
                         input.getAxis('x') * 5,
-                        input.getAxis('y') * 5);
+                        obj.velocity.y + sceneOptions.gravity);
+                })
+        ;
+
+        states.get('playerNormalGround')
+            .setUpdate(function(obj:GameObject)
+                {
+                    obj.velocity.setxy(
+                        input.getAxis('x') * 5,
+                        ((sceneOptions.height/2 - headOptions.height) - obj.position.y)/10);
+                })
+            .addTransition(states.get('playerJump'),'jump')
+        ;
+
+        states.get('playerJump')
+            .setStart(function(obj:GameObject)
+                {
+                    trace('pls');
+                    obj
+                        .setY(sceneOptions.height/2 - headOptions.height - 1)
+                        .setVelocityY(headOptions.jumpStrength)
+                        .setState(states.get('playerNormalAir'))
+                    ;
                 })
         ;
 
@@ -150,5 +201,10 @@ class MonsterScene extends GameScene {
     {
         generate('player');
         generate('soldier');
+    }
+
+    public override function onUpdate()
+    {
+        bobCounter += .01;
     }
 }
