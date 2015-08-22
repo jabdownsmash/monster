@@ -73,13 +73,18 @@ class Main extends Application {
 			    };
 
 			customRenderer.customRenderPreFunc = function(obj:GameObject) {
-					if(randomColor)
+
+			        GL.uniform4f (colorUniform, 1,1,1,1);
+					if(obj.getAttribute('randomColor') != null)
 					{
-			        	GL.uniform4f (colorUniform, Math.random()/2 + .5,Math.random()/2 + .5,Math.random()/2 + .5,1);
+						// if(randomColor)
+						// {
+				        	GL.uniform4f (colorUniform, Math.random()/2 + .5,Math.random()/2 + .5,Math.random()/2 + .5,1);
+						// }
 					}
-					else
+					if(obj.getAttribute('drawColorR') != null)
 					{
-			        	GL.uniform4f (colorUniform, drawColorR,drawColorB,drawColorG,drawColorA);
+			        	GL.uniform4f (colorUniform, obj.getAttribute('drawColorR'),obj.getAttribute('drawColorB'),obj.getAttribute('drawColorG'),obj.getAttribute('drawColorA'));
 					}
 				};
 

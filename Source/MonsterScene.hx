@@ -17,6 +17,12 @@ import gtoolbox.Input;
 class MonsterScene extends GameScene {
 
     var bobCounter = 0.0;
+
+    var sceneOptions = {
+        width: 400,
+        height: 300,
+        gravity: .3
+    }
        
     public function new () {
 
@@ -26,12 +32,6 @@ class MonsterScene extends GameScene {
             {
                 return new FState<GameObject,GameEvent>(name);
             });
-
-        var sceneOptions = {
-            width: 800,
-            height: 600,
-            gravity: .3
-        }
 
         var headOptions = {
             image: "assets/head.png",
@@ -85,6 +85,7 @@ class MonsterScene extends GameScene {
                     .setState(states.get('playerNormalAir'))
                     .addType(playerType)
                     .setZ(headOptions.z)
+                    .setAttribute('randomColor',true)
                 ;
 
                 input                    
@@ -94,9 +95,9 @@ class MonsterScene extends GameScene {
                         })
                 ;
 
-                generate("part",[rightArmOptions,head]);
-                generate("part",[bodyOptions,head]);
-                generate("part",[leftArmOptions,head]);
+                generate("part",[rightArmOptions,head]).setAttribute('randomColor',true);
+                generate("part",[bodyOptions,head]).setAttribute('randomColor',true);
+                generate("part",[leftArmOptions,head]).setAttribute('randomColor',true);
 
                 return head;
             });
@@ -131,6 +132,35 @@ class MonsterScene extends GameScene {
                 ;
             });
 
+        addGenerator("building",function(args:Array<Dynamic>)
+            {
+                return (new GameObject())
+                    .setGraphic(Image(args[7]))
+                    .setState(states.get('background'))
+                    .addType(blankType)
+                    .setScale(1/2)
+                    .setX(args[0])
+                    .setY(args[1])
+                    .setZ(-110 - args[2])
+                    .setAttribute('drawColorR',args[3])
+                    .setAttribute('drawColorG',args[4])
+                    .setAttribute('drawColorB',args[5])
+                    .setAttribute('drawColorA',args[6])
+                ;
+            });
+
+        addGenerator("skyBackground",function(args:Array<Dynamic>)
+            {
+                return (new GameObject())
+                    .setGraphic(Image("assets/skybg.png"))
+                    .setState(states.get('loopingBackground'))
+                    .setAttribute('width',800)
+                    .addType(blankType)
+                    .setX(args[0])
+                    .setZ(-200)
+                ;
+            });
+
         addGenerator("soldier",function()
             {
                 var pos = Math.random()*5;
@@ -142,6 +172,16 @@ class MonsterScene extends GameScene {
                     .setZ(pos)
                 ;
             });
+
+        states.get('background')
+            .setUpdate(function(obj:GameObject)
+                {
+                    if(obj.position.x< -sceneOptions.width*2)
+                    {
+                        delete(obj);
+                    }
+                })
+        ;
 
         states.get('loopingBackground')
             .setUpdate(function(obj:GameObject)
@@ -230,7 +270,7 @@ class MonsterScene extends GameScene {
         states.get('soldierNormal')
             .setStart(function(obj:GameObject)
                 {
-                    obj.setVelocityX(-3);
+                    obj.setVelocityX(-1);
                     obj.setAttribute('targetPosition',Math.random()*sceneOptions.width/3);
                 })
             .setUpdate(function(obj:GameObject)
@@ -259,9 +299,24 @@ class MonsterScene extends GameScene {
     {
         generate('player');
 
-        for(i in 0...(Math.floor(800/12) + 2))
+        generate('skyBackground',[-sceneOptions.width/2]);
+        generate('skyBackground',[sceneOptions.width/2]);
+        for(i in 0...(Math.floor(sceneOptions.width/12) + 2))
         {
-            generate('groundTile',[i*12 + 6 - 400]);
+            generate('groundTile',[i*12 + 6 - sceneOptions.width/2]);
+        }
+
+        for(i in 0...8)
+        {
+            generate('building',[Math.random()*sceneOptions.width - sceneOptions.width/2, sceneOptions.height/2 - 70 + Math.random()*50,0, .6,.6,.6,1, "assets/building" + (Math.floor(Math.random()*4) + 1) + ".png"]);
+        }
+        for(i in 0...8)
+        {
+            generate('building',[Math.random()*sceneOptions.width - sceneOptions.width/2, sceneOptions.height/2 - 100 + Math.random()*50,1, .4,.4,.4,1, "assets/building" + (Math.floor(Math.random()*4) + 1) + ".png"]);
+        }
+        for(i in 0...8)
+        {
+            generate('building',[Math.random()*sceneOptions.width - sceneOptions.width/2, sceneOptions.height/2 - 120 + Math.random()*50,2, .3,.3,.3,1, "assets/building" + (Math.floor(Math.random()*4) + 1) + ".png"]);
         }
     }
 
