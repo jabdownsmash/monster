@@ -73,7 +73,9 @@ class MonsterScene extends GameScene {
             .registerInput(KeyboardKeys.Z,'jump')
         ;
 
+        var blankType = new ObjectType();
         var playerType = new ObjectType();
+        var enemyType = new ObjectType();
 
         addGenerator("player",function()
             {
@@ -115,16 +117,48 @@ class MonsterScene extends GameScene {
                 ;
             });
 
-        addGenerator("soldier",function()
+
+        addGenerator("groundTile",function(args:Array<Dynamic>)
             {
                 return (new GameObject())
-                    .setPosition(new Vec2(sceneOptions.width/2 + Math.random()*100,sceneOptions.height/2 - 7))
-                    .setGraphic(SpriteSheet("assets/soldier-runcycle.png", 16,14, [0,1,2,3],5, true))
-                    // .setScale(1/4)
-                    .setState(states.get('soldierNormal'))
-                    .addType(playerType)
+                    .setGraphic(Image("assets/groundtile.png"))
+                    .setState(states.get('loopingBackground'))
+                    .setAttribute('width',12)
+                    .addType(blankType)
+                    .setX(args[0])
+                    .setY(sceneOptions.height/2 - 6)
+                    .setZ(-10)
                 ;
             });
+
+        addGenerator("soldier",function()
+            {
+                var pos = Math.random()*5;
+                return (new GameObject())
+                    .setPosition(new Vec2(sceneOptions.width/2 + Math.random()*100,sceneOptions.height/2 - 7 - pos))
+                    .setGraphic(SpriteSheet("assets/soldier-runcycle.png", 16,14, [0,1,2,3],5, true))
+                    .setState(states.get('soldierNormal'))
+                    .addType(enemyType)
+                    .setZ(pos)
+                ;
+            });
+
+        states.get('loopingBackground')
+            .setUpdate(function(obj:GameObject)
+                {
+                    if(obj.position.x + obj.getAttribute('width') < -sceneOptions.width/2)
+                    {
+                        obj.setX(sceneOptions.width/2);
+                    }
+                })
+        ;
+
+        states.get('playerHeadControl')
+            .setUpdate(function(obj:GameObject)
+                {
+                    obj.setAngularVel((input.getAxis('y')*30 - obj.angle)/10);
+                })
+        ;
 
         states.get('playerNormalAir')
             .setUpdate(function(obj:GameObject)
@@ -142,15 +176,18 @@ class MonsterScene extends GameScene {
                         input.getAxis('x') * 5,
                         obj.velocity.y + sceneOptions.gravity);
                 })
+            .addParent(states.get('playerHeadControl'))
         ;
 
         states.get('playerNormalGround')
             .setUpdate(function(obj:GameObject)
                 {
+                    // obj.angle += .2;
                     obj.velocity.setxy(
                         input.getAxis('x') * 5,
                         ((sceneOptions.height/2 - headOptions.height) - obj.position.y)/10);
                 })
+            .addParent(states.get('playerHeadControl'))
             .addTransition(states.get('playerJump'),'jump')
         ;
 
@@ -194,13 +231,24 @@ class MonsterScene extends GameScene {
             .setStart(function(obj:GameObject)
                 {
                     obj.setVelocityX(-3);
+                    obj.setAttribute('targetPosition',Math.random()*sceneOptions.width/3);
                 })
             .setUpdate(function(obj:GameObject)
                 {
-                    if(obj.position.x < -sceneOptions.width/2 - 10)
+                    if(obj.position.x < obj.getAttribute('targetPosition'))
                     {
-                        delete(obj);
+                        obj.setState(states.get('soldierFire'));
                     }
+                })
+        ;
+
+        states.get('soldierFire')
+            .setStart(function(obj:GameObject)
+                {
+                    obj
+                        .setVelocityX(0)
+                        .setGraphic(Image('assets/soldier-stand.png'))
+                    ;
                 })
         ;
 
@@ -210,13 +258,22 @@ class MonsterScene extends GameScene {
     public override function onStart()
     {
         generate('player');
+
+        for(i in 0...(Math.floor(800/12) + 2))
+        {
+            generate('groundTile',[i*12 + 6 - 400]);
+        }
     }
 
     public override function onUpdate()
     {
         bobCounter += .01;
-        generate('soldier');
-        generate('soldier');
-        generate('soldier');
+        if(bobCounter < 1) generate('soldier');
+        // generate('soldier');
+        // generate('soldier');
+        // generate('soldier');
+        // generate('soldier');
+        // generate('soldier');
+        // generate('soldier');
     }
 }
