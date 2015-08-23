@@ -30,6 +30,12 @@ class MonsterScene extends GameScene {
     var leftArm:GameObject;
     var rightArm:GameObject;
     var body:GameObject;
+
+    var health:Float = 1;
+    var damagePerHit:Float = .003;
+    var healPerHit:Float = .001;
+
+    public var finished:Bool = false;
        
     public function new () {
 
@@ -297,7 +303,72 @@ class MonsterScene extends GameScene {
             .onEvent('hit',function(obj:GameObject,event:GameEvent)
                 {
                     // trace('')
+                    health -= damagePerHit;
+                    if(health <= 0)
+                    {
+                        finished = true;
+                    }
                     delete(event.collision.obj2);
+                })
+        ;
+
+        states.get('playerBlue')
+            .setUpdate(function(obj:GameObject)
+                {
+                    player
+                        .setAttribute('drawColorB',health*1)
+                        .setAttribute('drawColorR',0)
+                        .setAttribute('drawColorG',0)
+                        .setAttribute('drawColorA',1)
+                    ;
+                    leftArm
+                        .setAttribute('drawColorB',health*1)
+                        .setAttribute('drawColorR',0)
+                        .setAttribute('drawColorG',0)
+                        .setAttribute('drawColorA',1)
+                    ;
+                    rightArm
+                        .setAttribute('drawColorB',health*1)
+                        .setAttribute('drawColorR',0)
+                        .setAttribute('drawColorG',0)
+                        .setAttribute('drawColorA',1)
+                    ;
+                    body
+                        .setAttribute('drawColorB',health*1)
+                        .setAttribute('drawColorR',0)
+                        .setAttribute('drawColorG',0)
+                        .setAttribute('drawColorA',1)
+                    ;
+                })
+        ;
+
+        states.get('playerRed')
+            .setUpdate(function(obj:GameObject)
+                {
+                    player
+                        .setAttribute('drawColorR',health*1)
+                        .setAttribute('drawColorB',0)
+                        .setAttribute('drawColorG',0)
+                        .setAttribute('drawColorA',1)
+                    ;
+                    leftArm
+                        .setAttribute('drawColorR',health*1)
+                        .setAttribute('drawColorB',0)
+                        .setAttribute('drawColorG',0)
+                        .setAttribute('drawColorA',1)
+                    ;
+                    rightArm
+                        .setAttribute('drawColorR',health*1)
+                        .setAttribute('drawColorB',0)
+                        .setAttribute('drawColorG',0)
+                        .setAttribute('drawColorA',1)
+                    ;
+                    body
+                        .setAttribute('drawColorR',health*1)
+                        .setAttribute('drawColorB',0)
+                        .setAttribute('drawColorG',0)
+                        .setAttribute('drawColorA',1)
+                    ;
                 })
         ;
 
@@ -330,6 +401,7 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('playerNormalAir')
+            .addParent(states.get('playerBlue'))
             .addParent(states.get('playerVulnerable'))
             .addParent(states.get('playerNormal'))
             .setUpdate(function(obj:GameObject)
@@ -351,6 +423,7 @@ class MonsterScene extends GameScene {
 
         states.get('playerNormalGround')
             .addParent(states.get('playerNormal'))
+            .addParent(states.get('playerBlue'))
             .addParent(states.get('playerVulnerable'))
             .setUpdate(function(obj:GameObject)
                 {
@@ -362,6 +435,7 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('playerAttackGround')
+            .addParent(states.get('playerRed'))
             .setStart(function(obj)
                 {
                     var leftArmEvent = new GameEvent('attack');
@@ -564,6 +638,7 @@ class MonsterScene extends GameScene {
                         obj.setAttribute('removed',true);
                         numSoldiers -=1;
                     }
+                    health += healPerHit;
                     obj.setGraphic(SpriteSheet("assets/soldier-hit-up.png", 14,15, [0,1],1, true));
                     obj.setVelocityY(-10);
                     obj.setAttribute('timer',20);
@@ -575,6 +650,7 @@ class MonsterScene extends GameScene {
                     {
                         obj.setState(states.get('soldierFlying'));
                     }
+                    // finished = true;
                 })
         ;
 

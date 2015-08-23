@@ -21,11 +21,13 @@ import lime.Assets;
 
 class Main extends Application {
 	
-	var scene:GameScene;
+	var titleScene:TitleScene;
+	var gameScene:MonsterScene;
 
 	var started = false;
 
 	var limeInput:LimeInput;
+		var customRenderer:CustomRenderer;
 
 	public static var randomColor:Bool = false;
 
@@ -44,7 +46,7 @@ class Main extends Application {
 
 		if(!started)
 		{
-			var customRenderer = new CustomRenderer();
+			customRenderer = new CustomRenderer();
 			customRenderer.fragmentSource = 
 	            
 	            #if !desktop
@@ -84,7 +86,7 @@ class Main extends Application {
 					}
 					if(obj.getAttribute('drawColorR') != null)
 					{
-			        	GL.uniform4f (colorUniform, obj.getAttribute('drawColorR'),obj.getAttribute('drawColorB'),obj.getAttribute('drawColorG'),obj.getAttribute('drawColorA'));
+			        	GL.uniform4f (colorUniform, obj.getAttribute('drawColorR'),obj.getAttribute('drawColorG'),obj.getAttribute('drawColorB'),obj.getAttribute('drawColorA'));
 					}
 				};
 
@@ -99,12 +101,46 @@ class Main extends Application {
 			limeInput = new LimeInput();
 			Backend.input = limeInput;
 
-			scene = new MonsterScene();
+			// scene = new MonsterScene();
+			titleScene = new TitleScene();
 
-			scene.start();
+			titleScene.start();
 		}
-		scene.update();
-		scene.render();
+		if(titleScene.finished)
+		{
+			if(gameScene == null)
+			{
+				gameScene = new MonsterScene();
+				gameScene.start();
+			}
+			else
+			{
+				gameScene.update();
+				gameScene.render();
+				if(gameScene.finished)
+				{
+					var lgb = new LimeGraphicsBackend(window);
+					lgb.setCustom(customRenderer);
+
+					Backend.graphics = lgb;
+					Backend.physics = new SimplePhysicsBackend();
+					limeInput = new LimeInput();
+					Backend.input = limeInput;
+
+					// scene = new MonsterScene();
+					titleScene = new TitleScene();
+
+					titleScene.start();
+
+					gameScene = null;
+				}
+			}
+		}
+		else
+		{
+			titleScene.update();
+			titleScene.render();
+		}
 	}
 	
 	
