@@ -423,7 +423,7 @@ class MonsterScene extends GameScene {
                 })
             .setUpdate(function(obj:GameObject)
                 {
-                    if(obj.position.x < player.position.x)
+                    if(obj.position.x < player.position.x + obj.z*130)
                     {
                         obj.flip = true;
                         if(obj.position.x < player.position.x - 100 - obj.getAttribute('distanceDifference'))
