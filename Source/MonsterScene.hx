@@ -24,7 +24,9 @@ class MonsterScene extends GameScene {
         gravity: .3
     }
 
-    var scrollX:Float = 0;
+    var numSoldiers:Int = 0;
+    var maxSoldiers:Int = 200;
+    var player:GameObject;
        
     public function new () {
 
@@ -43,7 +45,7 @@ class MonsterScene extends GameScene {
             image: "assets/head.png",
             height: 130,
             jumpStrength: -10,
-            z: -2
+            z: 3
         };
 
         var rightArmOptions = {
@@ -53,7 +55,7 @@ class MonsterScene extends GameScene {
             bobSpeed: 2,
             followSpeed: 1/6,
             type:blankType,
-            z: -1
+            z: 10
         };
 
         var leftArmOptions = {
@@ -103,6 +105,8 @@ class MonsterScene extends GameScene {
                 generate("part",[rightArmOptions,head]).setAttribute('randomColor',true);
                 generate("part",[bodyOptions,head]).setAttribute('randomColor',true);
                 generate("part",[leftArmOptions,head]).setAttribute('randomColor',true);
+
+                player = head;
 
                 return head;
             });
@@ -158,7 +162,7 @@ class MonsterScene extends GameScene {
             {
                 return (new GameObject())
                     .setGraphic(Image("assets/skybg.png"))
-                    .setState(states.get('loopingBackground'))
+                    .setState(states.get('background'))
                     .setAttribute('width',800)
                     .addType(blankType)
                     .setX(args[0])
@@ -169,59 +173,50 @@ class MonsterScene extends GameScene {
         addGenerator("soldier",function()
             {
                 var pos = Math.random()*30;
+                numSoldiers++;
                 return (new GameObject())
-                    .setPosition(new Vec2(sceneOptions.width/2 + Math.random()*100,sceneOptions.height/2 - 20 - pos))
+                    .setPosition(new Vec2(player.position.x + sceneOptions.width/2 + 5 + Math.random()*100,sceneOptions.height/2 - 20 - pos))
                     .setGraphic(SpriteSheet("assets/soldier-runcycle.png", 16,14, [0,1,2,3],5, true))
                     .setState(states.get('soldierNormal'))
                     .addType(enemyType)
-                    .setZ(pos/1000)
+                    .setZ(-pos/100)
                 ;
             });
 
-        states.get('scroll')
+        states.get('background')
             .setStart(function(obj:GameObject)
                 {
-                    obj.setAttribute('scrolledAmount',0.0);
+                    obj.setAttribute('startPosition',obj.position);
                 })
             .setUpdate(function(obj:GameObject)
                 {
-                    obj.translateX(scrollX - obj.getAttribute('scrolledAmount'));
-                    obj.setAttribute('scrolledAmount',scrollX);
-                })
-        ;
-
-        states.get('background')
-            .setUpdate(function(obj:GameObject)
-                {
-                    if(obj.position.x< -sceneOptions.width*2)
-                    {
-                        delete(obj);
-                    }
+                    var startPosition:Vec2 = obj.getAttribute('startPosition');
+                    obj.position = (camera.add(startPosition));
                 })
         ;
 
         states.get('loopingBackground')
-            .addParent(states.get('scroll'))
             .setUpdate(function(obj:GameObject)
                 {
-                    if(obj.position.x + obj.getAttribute('width') < -sceneOptions.width/2)
+                    while(obj.position.x + obj.getAttribute('width')*3/2 < camera.x - sceneOptions.width/2)
                     {
-                        obj.setX(sceneOptions.width/2);
+                        obj.translateX(sceneOptions.width - (sceneOptions.width%obj.getAttribute('width')) + obj.getAttribute('width')*3);
+                    }
+                    while(obj.position.x > camera.x - obj.getAttribute('width')*3/2 - sceneOptions.width/2 + sceneOptions.width - (sceneOptions.width%obj.getAttribute('width')) + obj.getAttribute('width')*3)
+                    {
+                        obj.translateX(-(sceneOptions.width - (sceneOptions.width%obj.getAttribute('width')) + obj.getAttribute('width')*3));
                     }
                 })
         ;
 
         states.get('playerHeadControl')
-            .addParent(states.get('scroll'))
             .setUpdate(function(obj:GameObject)
                 {
-                    scrollX += -obj.position.x/10;
                     obj.setAngularVel((input.getAxis('y')*30 - obj.angle)/10);
                 })
         ;
 
         states.get('playerNormalAir')
-            .addParent(states.get('scroll'))
             .setUpdate(function(obj:GameObject)
                 {
                     if(obj.position.y > sceneOptions.height/2 - headOptions.height)
@@ -241,7 +236,6 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('playerNormalGround')
-            .addParent(states.get('scroll'))
             .setUpdate(function(obj:GameObject)
                 {
                     // obj.angle += .2;
@@ -254,7 +248,6 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('playerJump')
-            .addParent(states.get('scroll'))
             .setStart(function(obj:GameObject)
                 {
                     obj
@@ -266,7 +259,6 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('restingBob')
-            .addParent(states.get('scroll'))
             .setUpdate(function(obj:GameObject)
                 {
                     var targetPosition:Vec2 = obj.getAttribute('head').position;
@@ -291,30 +283,84 @@ class MonsterScene extends GameScene {
                 })
         ;
 
-        states.get('soldierNormal')
-            .addParent(states.get('scroll'))
-            .setStart(function(obj:GameObject)
-                {
-                    obj.setVelocityX(-1);
-                    obj.setAttribute('targetPosition',Math.random()*sceneOptions.width/3);
-                })
+        states.get('soldierScreen')
             .setUpdate(function(obj:GameObject)
                 {
-                    if(obj.position.x < obj.getAttribute('targetPosition'))
+                    if(obj.position.x < player.position.x - sceneOptions.width/2 - 110)
                     {
-                        obj.setState(states.get('soldierFire'));
+                        delete(obj);
+                        numSoldiers -= 1;
+                    }
+                    if(obj.position.x > player.position.x + sceneOptions.width/2 + 110)
+                    {
+                        delete(obj);
+                        numSoldiers -= 1;
                     }
                 })
         ;
 
-        states.get('soldierFire')
-            .addParent(states.get('scroll'))
+        states.get('soldierNormal')
+            .addParent(states.get('soldierScreen'))
+            .setStart(function(obj:GameObject)
+                {
+                    obj.setAttribute('distanceDifference',Math.random()*Math.random()*150);
+                })
+            .setUpdate(function(obj:GameObject)
+                {
+                    if(obj.position.x < player.position.x)
+                    {
+                        if(obj.position.x < player.position.x - 100 - obj.getAttribute('distanceDifference'))
+                        {
+                            obj.setVelocityX(1);
+                        }
+                        else if(Math.abs(player.position.x - 100 - obj.getAttribute('distanceDifference') - obj.position.x) <= 1)
+                        {
+                            obj
+                                .setX(player.position.x - 100 - obj.getAttribute('distanceDifference'))
+                                .setState(states.get('soldierStand'))
+                            ;
+                        }
+                        else
+                        {
+                            obj.setVelocityX(-1);
+                        }
+                    }
+                    else
+                    {
+                        if(obj.position.x > player.position.x + 100 + obj.getAttribute('distanceDifference'))
+                        {
+                            obj.setVelocityX(-1);
+                        }
+                        else if(Math.abs(obj.position.x - player.position.x - 100 - obj.getAttribute('distanceDifference')) <= 1)
+                        {
+                            obj
+                                .setX(player.position.x + 100 + obj.getAttribute('distanceDifference'))
+                                .setState(states.get('soldierStand'))
+                            ;
+                        }
+                        else
+                        {
+                            obj.setVelocityX(1);
+                        }
+                    }
+                })
+        ;
+
+        states.get('soldierStand')
+            .addParent(states.get('soldierScreen'))
             .setStart(function(obj:GameObject)
                 {
                     obj
                         .setVelocityX(0)
                         .setGraphic(Image('assets/soldier-stand.png'))
                     ;
+                })
+            .setUpdate(function(obj:GameObject)
+                {
+                    if(!(obj.position.x == player.position.x - 100 - obj.getAttribute('distanceDifference') || obj.position.x == player.position.x + 100 + obj.getAttribute('distanceDifference')))
+                    {
+                        obj.setState(states.get('soldierNormal'));
+                    }
                 })
         ;
 
@@ -327,7 +373,7 @@ class MonsterScene extends GameScene {
 
         generate('skyBackground',[-sceneOptions.width/2]);
         generate('skyBackground',[sceneOptions.width/2]);
-        for(i in 0...(Math.floor(sceneOptions.width/12) + 2))
+        for(i in 0...(Math.floor(sceneOptions.width/12) + 3))
         {
             generate('groundTile',[i*12 + 6 - sceneOptions.width/2]);
         }
@@ -349,12 +395,12 @@ class MonsterScene extends GameScene {
     public override function onUpdate()
     {
         bobCounter += .01;
-        if(bobCounter < 1) generate('soldier');
-        // generate('soldier');
-        // generate('soldier');
-        // generate('soldier');
-        // generate('soldier');
-        // generate('soldier');
-        // generate('soldier');
+        if(numSoldiers < maxSoldiers)
+        {
+            generate('soldier');
+            generate('soldier');
+        }
+
+        camera.x += (player.position.x - camera.x)/2;
     }
 }
