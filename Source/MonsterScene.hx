@@ -95,30 +95,50 @@ class MonsterScene extends GameScene {
 
         addGenerator("player",function()
             {
-                var head:GameObject = (new GameObject())
+                player = (new GameObject())
                     .setGraphic(Image(headOptions.image))
                     .setScale(1/4)
                     .setState(states.get('playerNormalAir'))
                     .addType(playerType)
                     .setZ(headOptions.z)
                     .setCollider(headOptions.collider)
-                    .setAttribute('randomColor',true)
+                    .setAttribute('randomColor',false)
+                    .setAttribute('drawColorR',1.2)
+                    .setAttribute('drawColorG',0)
+                    .setAttribute('drawColorB',0)
+                    .setAttribute('drawColorA',1)
                 ;
 
                 input                    
                     .registerFunction(Input.ONKEYDOWN,'jump', function()
                         {
-                            head.processEvent(new GameEvent("jump"));
+                            player.processEvent(new GameEvent("jump"));
                         })
                 ;
 
-                generate("part",[rightArmOptions,head]).setAttribute('randomColor',true);
-                generate("part",[bodyOptions,head]).setAttribute('randomColor',true);
-                generate("part",[leftArmOptions,head]).setAttribute('randomColor',true);
+                generate("part",[rightArmOptions])
+                    .setAttribute('randomColor',false)
+                    .setAttribute('drawColorR',1.2)
+                    .setAttribute('drawColorG',0)
+                    .setAttribute('drawColorB',0)
+                    .setAttribute('drawColorA',1)
+                ;
+                generate("part",[bodyOptions])
+                    .setAttribute('randomColor',false)
+                    .setAttribute('drawColorR',1.2)
+                    .setAttribute('drawColorG',0)
+                    .setAttribute('drawColorB',0)
+                    .setAttribute('drawColorA',1)
+                ;
+                generate("part",[leftArmOptions])
+                    .setAttribute('randomColor',false)
+                    .setAttribute('drawColorR',1.2)
+                    .setAttribute('drawColorG',0)
+                    .setAttribute('drawColorB',0)
+                    .setAttribute('drawColorA',1)
+                ;
 
-                player = head;
-
-                return head;
+                return player;
             });
 
         addGenerator("part",function(args:Array<Dynamic>)
@@ -131,7 +151,6 @@ class MonsterScene extends GameScene {
                     .setAttribute('bobHeight',args[0].bobHeight)
                     .setAttribute('bobSpeed',args[0].bobSpeed)
                     .setAttribute('followSpeed',args[0].followSpeed)
-                    .setAttribute('head',args[1])
                     .addType(args[0].type)
                     .setCollider(args[0].collider)
                     .setZ(args[0].z)
@@ -215,7 +234,7 @@ class MonsterScene extends GameScene {
         states.get('bulletNormal')
             .setUpdate(function(obj:GameObject)
                 {
-                    if(obj.position.y < -sceneOptions.height/2 - 3)
+                    if(obj.position.y < -sceneOptions.height/2 - 3 || obj.position.x < player.position.x - sceneOptions.width*3/2 || obj.position.x > player.position.x + sceneOptions.width*3/2)
                     {
                         delete(obj);
                     }
@@ -279,6 +298,15 @@ class MonsterScene extends GameScene {
                     obj.velocity.setxy(
                         input.getAxis('x') * 5,
                         obj.velocity.y + sceneOptions.gravity);
+
+                    if(input.getAxis('x') < 0)
+                    {
+                        obj.flip = true;
+                    }
+                    if(input.getAxis('x') > 0)
+                    {
+                        obj.flip = false;
+                    }
                 })
             .addParent(states.get('playerHeadControl'))
         ;
@@ -291,6 +319,14 @@ class MonsterScene extends GameScene {
                     obj.velocity.setxy(
                         input.getAxis('x') * 5,
                         ((sceneOptions.height/2 - headOptions.height) - obj.position.y)/10);
+                    if(input.getAxis('x') < 0)
+                    {
+                        obj.flip = true;
+                    }
+                    if(input.getAxis('x') > 0)
+                    {
+                        obj.flip = false;
+                    }
                 })
             .addParent(states.get('playerHeadControl'))
             .addTransition(states.get('playerJump'),'jump')
@@ -311,14 +347,24 @@ class MonsterScene extends GameScene {
             .addParent(states.get('playerVulnerable'))
             .setUpdate(function(obj:GameObject)
                 {
-                    var targetPosition:Vec2 = obj.getAttribute('head').position;
+                    var flip = 1;
+                    if(player.flip)
+                    {
+                        obj.flip = true;
+                        flip = -1;
+                    }
+                    else
+                    {
+                        obj.flip = false;
+                    }
+
                     var restingPosition:Vec2 = obj.getAttribute('restingPosition');
                     var bobSpeed:Float = obj.getAttribute('bobSpeed');
                     var bobHeight:Float = obj.getAttribute('bobHeight');
                     var followSpeed:Float = obj.getAttribute('followSpeed');
 
-                    targetPosition = targetPosition.copy();
-                    targetPosition.x += (restingPosition.x);
+                    var targetPosition = player.position.copy();
+                    targetPosition.x += flip*(restingPosition.x);
                     targetPosition.y += (restingPosition.y + Math.sin(bobCounter*bobSpeed)*bobHeight);
                     
                     var velocity:Vec2 = targetPosition.sub(obj.position);
@@ -473,6 +519,8 @@ class MonsterScene extends GameScene {
         bobCounter += .01;
         if(numSoldiers < maxSoldiers)
         {
+            generate('soldier');
+            generate('soldier');
             generate('soldier');
             generate('soldier');
         }
