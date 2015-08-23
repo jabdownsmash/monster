@@ -27,6 +27,9 @@ class MonsterScene extends GameScene {
     var numSoldiers:Int = 0;
     var maxSoldiers:Int = 200;
     var player:GameObject;
+    var leftArm:GameObject;
+    var rightArm:GameObject;
+    var body:GameObject;
        
     public function new () {
 
@@ -91,6 +94,7 @@ class MonsterScene extends GameScene {
             .registerAxis(KeyboardKeys.LEFT,KeyboardKeys.RIGHT,'x')
             .registerAxis(KeyboardKeys.UP,KeyboardKeys.DOWN,'y')
             .registerInput(KeyboardKeys.Z,'jump')
+            .registerInput(KeyboardKeys.X,'attack')
         ;
 
         addGenerator("player",function()
@@ -113,24 +117,28 @@ class MonsterScene extends GameScene {
                     .registerFunction(Input.ONKEYDOWN,'jump', function()
                         {
                             player.processEvent(new GameEvent("jump"));
+                        })             
+                    .registerFunction(Input.ONKEYDOWN,'attack', function()
+                        {
+                            player.processEvent(new GameEvent("attack"));
                         })
                 ;
 
-                generate("part",[rightArmOptions])
+                rightArm = generate("part",[rightArmOptions])
                     .setAttribute('randomColor',false)
                     .setAttribute('drawColorR',1.2)
                     .setAttribute('drawColorG',0)
                     .setAttribute('drawColorB',0)
                     .setAttribute('drawColorA',1)
                 ;
-                generate("part",[bodyOptions])
+                body = generate("part",[bodyOptions])
                     .setAttribute('randomColor',false)
                     .setAttribute('drawColorR',1.2)
                     .setAttribute('drawColorG',0)
                     .setAttribute('drawColorB',0)
                     .setAttribute('drawColorA',1)
                 ;
-                generate("part",[leftArmOptions])
+                leftArm = generate("part",[leftArmOptions])
                     .setAttribute('randomColor',false)
                     .setAttribute('drawColorR',1.2)
                     .setAttribute('drawColorG',0)
@@ -287,8 +295,25 @@ class MonsterScene extends GameScene {
                 })
         ;
 
+        states.get('playerNormal')
+            .setUpdate(function(obj:GameObject)
+                {
+                    obj.setVelocityX(input.getAxis('x') * 5);
+                    if(input.getAxis('x') < 0)
+                    {
+                        obj.flip = true;
+                    }
+                    if(input.getAxis('x') > 0)
+                    {
+                        obj.flip = false;
+                    }
+                    bobCounter += .01;    
+                })
+        ;
+
         states.get('playerNormalAir')
             .addParent(states.get('playerVulnerable'))
+            .addParent(states.get('playerNormal'))
             .setUpdate(function(obj:GameObject)
                 {
                     if(obj.position.y > sceneOptions.height/2 - headOptions.height)
@@ -300,41 +325,55 @@ class MonsterScene extends GameScene {
                         ;
                     }
 
-                    obj.velocity.setxy(
-                        input.getAxis('x') * 5,
-                        obj.velocity.y + sceneOptions.gravity);
+                    obj.setVelocityY(obj.velocity.y + sceneOptions.gravity);
 
-                    if(input.getAxis('x') < 0)
-                    {
-                        obj.flip = true;
-                    }
-                    if(input.getAxis('x') > 0)
-                    {
-                        obj.flip = false;
-                    }
                 })
             .addParent(states.get('playerHeadControl'))
         ;
 
         states.get('playerNormalGround')
+            .addParent(states.get('playerNormal'))
             .addParent(states.get('playerVulnerable'))
             .setUpdate(function(obj:GameObject)
                 {
-                    // obj.angle += .2;
-                    obj.velocity.setxy(
-                        input.getAxis('x') * 5,
-                        ((sceneOptions.height/2 - headOptions.height) - obj.position.y)/10);
-                    if(input.getAxis('x') < 0)
-                    {
-                        obj.flip = true;
-                    }
-                    if(input.getAxis('x') > 0)
-                    {
-                        obj.flip = false;
-                    }
+                    obj.setVelocityY(((sceneOptions.height/2 - headOptions.height) - obj.position.y)/10);
                 })
             .addParent(states.get('playerHeadControl'))
             .addTransition(states.get('playerJump'),'jump')
+            .addTransition(states.get('playerAttackGround'),'attack')
+        ;
+
+        states.get('playerAttackGround')
+            .setStart(function(obj)
+                {
+                    var leftArmEvent = new GameEvent('attack');
+                    leftArmEvent
+                        .setAttribute('move',true)
+                        .setAttribute('position',new Vec2(100,30 + 60*input.getAxis('y')))
+                        .setAttribute('vel',15.0)
+                        .setAttribute('duration',20)
+                    ;
+                    leftArm.processEvent(leftArmEvent);
+
+                    var otherEvent = new GameEvent('attack');
+                    otherEvent
+                        .setAttribute('move',false)
+                        .setAttribute('duration',20)
+                    ;
+
+                    obj.setAttribute('timer',20);
+                        obj.setVelocity(new Vec2(0,0));
+                    // rightArm.processEvent(otherEvent);
+                    // body.processEvent(otherEvent);
+                })
+            .setUpdate(function(obj)
+                {
+                    obj.setAttribute('timer',obj.getAttribute('timer') - 1);
+                    if(obj.getAttribute('timer') <= 0)
+                    {
+                        obj.setState(states.get('playerNormalGround'));
+                    }
+                })
         ;
 
         states.get('playerJump')
@@ -380,6 +419,60 @@ class MonsterScene extends GameScene {
                     }
 
                     obj.setVelocity(velocity);
+
+                })
+            .addTransition(states.get('partAttack'),'attack')
+        ;
+
+        states.get('partAttack')
+            .setStart(function(obj:GameObject,event:GameEvent)
+                {
+                    obj.setAttribute('timer',event.getAttribute('duration'));
+                    obj.setAttribute('move',false);
+                    if(event.getAttribute('move'))
+                    {
+                        obj.setAttribute('move',true);
+
+                        obj.setAttribute('targetPosition',event.getAttribute('position'));
+                        obj.setAttribute('velocity',event.getAttribute('vel'));
+                    }
+                    else
+                    {
+                        obj.setVelocity(new Vec2(0,0));
+                    }
+                })
+            .setUpdate(function(obj:GameObject)
+                {
+                    if(obj.getAttribute('move'))
+                    {
+                        var flip = 1;
+                        if(obj.flip)
+                        {
+                            flip = -1;
+                        }
+
+                        var targetPosition:Vec2 = obj.getAttribute('targetPosition').copy();
+                        targetPosition.x *= flip;
+                        targetPosition.addeq(player.position);
+                        if(Vec2.distance(targetPosition,obj.position) < obj.getAttribute('velocity'))
+                        {
+                            obj.setPosition(targetPosition);
+                            obj.setVelocity(new Vec2(0,0));
+                        }
+                        else
+                        {
+                            var vel = targetPosition.sub(obj.position).unit().mul(obj.getAttribute('velocity'));
+                            
+
+                            obj.setVelocity(vel);
+                        }
+                    }
+
+                    obj.setAttribute('timer',obj.getAttribute('timer') - 1);
+                    if(obj.getAttribute('timer') <= 0)
+                    {
+                        obj.setState(states.get('restingBob'));
+                    }
 
                 })
         ;
@@ -525,7 +618,6 @@ class MonsterScene extends GameScene {
 
     public override function onUpdate()
     {
-        bobCounter += .01;
         if(numSoldiers < maxSoldiers)
         {
             generate('soldier');
