@@ -36,6 +36,10 @@ class MonsterScene extends GameScene {
     var healPerHit:Float = .001;
 
     public var finished:Bool = false;
+
+    public var score:Int = 0;
+
+    public static var instructionsShown:Bool = false;
        
     public function new () {
 
@@ -215,6 +219,18 @@ class MonsterScene extends GameScene {
                 ;
             });
 
+        addGenerator("instructionSign",function()
+            {
+                instructionsShown = true;
+                return (new GameObject())
+                    .setGraphic(Image("assets/instructions.png"))
+                    .setState(states.get('instructionSign'))
+                    .addType(blankType)
+                    .setPosition(new Vec2(100,0))
+                    .setZ(-100)
+                ;
+            });
+
         addGenerator("soldier",function()
             {
                 var pos = Math.random()*30;
@@ -306,7 +322,11 @@ class MonsterScene extends GameScene {
                     health -= damagePerHit;
                     if(health <= 0)
                     {
-                        finished = true;
+                        // finished = true;
+                        player.setState(states.get('partDead'));
+                        leftArm.setState(states.get('partDead'));
+                        rightArm.setState(states.get('partDead'));
+                        body.setState(states.get('partDead'));
                     }
                     delete(event.collision.obj2);
                 })
@@ -380,8 +400,12 @@ class MonsterScene extends GameScene {
                     {
                         flip = -1;
                     }
-                    obj.setAngularVel((input.getAxis('y')*30*flip - obj.angle)/10);
+                    obj.setAngle((input.getAxis('y')*30*flip - obj.angle)/10 + obj.angle);
                 })
+            // .setStop(function(obj:GameObject)
+            //     {
+            //         obj.setAngularVel(0);
+            //     })
         ;
 
         states.get('playerNormal')
@@ -522,6 +546,32 @@ class MonsterScene extends GameScene {
             .addTransition(states.get('partAttack'),'attack')
         ;
 
+        var deadCounter = 600;
+
+        states.get('partDead')
+            .setStart(function(obj:GameObject)
+                {
+                    obj.setAttribute('targetY',sceneOptions.height/2 - 20 - 50*Math.random());
+                })
+            .setUpdate(function(obj:GameObject)
+                {
+                    obj.setVelocityX(obj.velocity.x*.9);
+                    if(obj.getAttribute('targetY') - obj.position.y <= obj.velocity.y)
+                    {
+                        obj.position.addeq(obj.velocity);
+                        obj.setVelocity(new Vec2(0,0));
+                    }
+                    else
+                    {
+                        obj.setVelocityY(obj.velocity.y + sceneOptions.gravity);
+                    }
+                    if(deadCounter-- < 0)
+                    {
+                        finished = true;
+                    }
+                })
+        ;
+
         states.get('partAttack')
             .setStart(function(obj:GameObject,event:GameEvent)
                 {
@@ -568,7 +618,6 @@ class MonsterScene extends GameScene {
                         {
                             var vel = targetPosition.sub(obj.position).unit().mul(obj.getAttribute('velocity'));
                             
-
                             obj.setVelocity(vel);
                         }
                     }
@@ -637,7 +686,10 @@ class MonsterScene extends GameScene {
                     {
                         obj.setAttribute('removed',true);
                         numSoldiers -=1;
+                        score += 1;
+                        health -= healPerHit;
                     }
+                    health += healPerHit;
                     health += healPerHit;
                     obj.setGraphic(SpriteSheet("assets/soldier-hit-up.png", 14,15, [0,1],1, true));
                     obj.setVelocityY(-10);
@@ -815,6 +867,10 @@ class MonsterScene extends GameScene {
         for(i in 0...8)
         {
             generate('building',[Math.random()*sceneOptions.width - sceneOptions.width/2, sceneOptions.height/2 - 120 + Math.random()*50,2, .3,.3,.3,1, "assets/building" + (Math.floor(Math.random()*4) + 1) + ".png"]);
+        }
+        if(!instructionsShown)
+        {
+            generate('instructionSign');
         }
     }
 

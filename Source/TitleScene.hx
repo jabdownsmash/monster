@@ -25,6 +25,8 @@ class TitleScene extends GameScene {
     }
 
     public var finished:Bool = false;
+
+    public var screenObjects:Array<GameObject> = [];
        
     public function new () {
 
@@ -87,6 +89,14 @@ class TitleScene extends GameScene {
                 ;
             });
 
+        addGenerator("number",function()
+            {
+                return (new GameObject())
+                    .setState(states.get('fuk'))
+                    .addType(blankType)
+                ;
+            })
+        ;
         states.get('screen')
             .setUpdate(function(obj:GameObject)
                 {
@@ -97,6 +107,11 @@ class TitleScene extends GameScene {
                 })
             .onEvent('proceed',function(obj:GameObject)
                 {
+                    for(object in screenObjects)
+                    {
+                        delete(object);
+                    }
+                    screenObjects = [];
                     finished = true;
                 })
         ;
@@ -134,8 +149,29 @@ class TitleScene extends GameScene {
 
     public override function onStart()
     {
-        generate('screen');
-        generate('name');
-        generate('press');
+        screenObjects = [generate('screen'), generate('name'),generate('press')];
+
+        var kek:Int = Main.highScore;
+
+        var i:Int = 0;
+        while(kek > 0)
+        {
+            var digit = kek % 10;
+
+            screenObjects.push(generate('number')
+                .setPosition(new Vec2(190 - i*6,140))
+                .setGraphic(Image('assets/num' + digit + '.png'))
+            );
+
+            kek = Math.floor(kek/10);
+            i++;
+        }
+        if(i > 0)
+        {
+            screenObjects.push(generate('number')
+                .setPosition(new Vec2(190 - i*6 - 20,140))
+                .setGraphic(Image('assets/hiscore.png'))
+            );
+        }
     }
 }

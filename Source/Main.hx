@@ -29,6 +29,8 @@ class Main extends Application {
 	var limeInput:LimeInput;
 		var customRenderer:CustomRenderer;
 
+	public static var highScore = 0; 
+
 	public static var randomColor:Bool = false;
 
 	public static var drawColorR:Float = 1;
@@ -119,6 +121,10 @@ class Main extends Application {
 				gameScene.render();
 				if(gameScene.finished)
 				{
+					if(gameScene.score > highScore)
+					{
+						highScore = gameScene.score;
+					}
 					var lgb = new LimeGraphicsBackend(window);
 					lgb.setCustom(customRenderer);
 
