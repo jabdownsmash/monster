@@ -44,6 +44,7 @@ class MonsterScene extends GameScene {
         var playerType = new ObjectType();
         var enemyType = new ObjectType();
         var enemyAttackType = new ObjectType();
+        var playerAttackType = new ObjectType();
 
 
         var collider:Collider = Circle(0,0,80);
@@ -224,6 +225,7 @@ class MonsterScene extends GameScene {
                     .setState(states.get('soldierNormal'))
                     .addType(enemyType)
                     .setAttribute('shotCounter',0)
+                    .setCollider(Circle(0,0,1))
                     .setZ(-pos/100)
                 ;
             });
@@ -238,6 +240,22 @@ class MonsterScene extends GameScene {
                     .setState(states.get('bulletNormal'))
                 ;
             });
+
+        addGenerator('playerAttackHitbox',function(args:Array<Dynamic>)
+            {
+                return (new GameObject())
+                    .setAttribute('followObject',args[0])
+                    .addType(playerAttackType)
+                    .setState(states.get('playerAttackHitbox'))
+                ;
+            });
+
+        states.get('playerAttackHitbox')
+            .setUpdate(function(obj:GameObject)
+                {
+                    obj.setPosition(obj.getAttribute('followObject').position);
+                })
+        ;
 
         states.get('bulletNormal')
             .setUpdate(function(obj:GameObject)
@@ -352,6 +370,7 @@ class MonsterScene extends GameScene {
                         .setAttribute('position',new Vec2(100,30 + 60*input.getAxis('y')))
                         .setAttribute('vel',15.0)
                         .setAttribute('duration',20)
+                        .setAttribute('type',playerAttackType)
                     ;
                     leftArm.processEvent(leftArmEvent);
 
@@ -359,6 +378,7 @@ class MonsterScene extends GameScene {
                     otherEvent
                         .setAttribute('move',false)
                         .setAttribute('duration',20)
+                        .setAttribute('type',blankType)
                     ;
 
                     obj.setAttribute('timer',20);
@@ -389,6 +409,10 @@ class MonsterScene extends GameScene {
 
         states.get('restingBob')
             .addParent(states.get('playerVulnerable'))
+            .setStart(function(obj:GameObject)
+                {
+                    obj.addType(blankType);
+                })
             .setUpdate(function(obj:GameObject)
                 {
                     var flip = 1;
@@ -440,6 +464,13 @@ class MonsterScene extends GameScene {
                     {
                         obj.setVelocity(new Vec2(0,0));
                     }
+                    if(event.getAttribute('type') == playerAttackType)
+                    {
+                        obj.setAttribute('hasHitbox',true);
+                        obj.setAttribute('hitbox',generate('playerAttackHitbox',[obj])
+                                                    .setCollider(Circle(0,0,20)));
+                    }
+                    // obj.addType(event.getAttribute('type'));
                 })
             .setUpdate(function(obj:GameObject)
                 {
@@ -475,6 +506,15 @@ class MonsterScene extends GameScene {
                     }
 
                 })
+            .setEnd(function(obj:GameObject)
+                {
+                    if(obj.getAttribute('hasHitbox'))
+                    {
+                        var hitbox:GameObject = obj.getAttribute('hitbox');
+                        delete(hitbox);
+                        obj.setAttribute('hitbox',null);
+                    }
+                })
         ;
 
         states.get('soldierScreen')
@@ -490,7 +530,92 @@ class MonsterScene extends GameScene {
                         delete(obj);
                         numSoldiers -= 1;
                     }
+                    if(obj.position.y > sceneOptions.height/2 + 10)
+                    {
+                        delete(obj);
+                        // numSoldiers -= 1;
+                    }
                     obj.setAttribute('shotCounter',obj.getAttribute('shotCounter') - 1);
+                })
+            .addTransition(states.get('soldierHit'),'hit')
+        ;
+
+        states.get('soldierHitGravity')
+            .setUpdate(function(obj:GameObject)
+                {
+                    obj.setVelocityY(obj.velocity.y += sceneOptions.gravity);
+                    if(obj.velocity.x < 0)
+                    {
+                        obj.flip = true;
+                    }
+                    if(obj.velocity.y >= 0)
+                    {
+                        obj.setGraphic(SpriteSheet("assets/soldier-hit-down.png", 14,15, [0,1],1, true));
+                    }
+                })
+        ;
+
+        states.get('soldierHit')
+            .addParent(states.get('soldierHitGravity'))
+            .setStart(function(obj:GameObject)
+                {
+                    if(obj.getAttribute('removed') == null)
+                    {
+                        obj.setAttribute('removed',true);
+                        numSoldiers -=1;
+                    }
+                    obj.setGraphic(SpriteSheet("assets/soldier-hit-up.png", 14,15, [0,1],1, true));
+                    obj.setVelocityY(-10);
+                    obj.setAttribute('timer',20);
+                })
+            .setUpdate(function(obj:GameObject)
+                {
+                    obj.setAttribute('timer',obj.getAttribute('timer') - 1);
+                    if(obj.getAttribute('timer') <= 0)
+                    {
+                        obj.setState(states.get('soldierFlying'));
+                    }
+                })
+        ;
+
+        states.get('soldierFlying')
+            .addParent(states.get('soldierHitGravity'))
+            .setUpdate(function(obj:GameObject)
+                {
+                    if(obj.position.y + obj.velocity.y >= sceneOptions.height/2 - 20 + obj.z*100)
+                    {
+                        // obj.position.y = sceneOptions.height/2 - 20 + obj.z*100;
+                        obj.setState(states.get('soldierGround'));
+                    }
+                })
+            .addTransition(states.get('soldierHit'),'hit')
+        ;
+
+        states.get('soldierGround')
+            .setStart(function(obj:GameObject)
+                {
+                    obj.setAttribute('timer',100)
+                        .setAttribute('drawColorR',1)
+                        .setAttribute('drawColorG',1)
+                        .setAttribute('drawColorB',1)
+                        .setAttribute('drawColorA',1)
+                    ;
+                    obj.setGraphic(Image("assets/soldier-dead.png"));
+                    obj.setVelocity(new Vec2(0,0));
+                })
+            .setUpdate(function(obj:GameObject)
+                {
+                    obj
+                        .setAttribute('timer',obj.getAttribute('timer') - 1)
+                        // .setAttribute('drawColorA',obj.getAttribute('timer')/100)
+                        .setAttribute('drawColorR',obj.getAttribute('timer')/100)
+                        .setAttribute('drawColorG',obj.getAttribute('timer')/100)
+                        .setAttribute('drawColorB',obj.getAttribute('timer')/100)
+                    ;
+                    if(obj.getAttribute('timer') <= 0)
+                    {
+                        delete(obj);
+                    }
                 })
         ;
 
@@ -588,6 +713,7 @@ class MonsterScene extends GameScene {
 
 
         addInteractionStartListener('hit',playerType,enemyAttackType);
+        addInteractionStartListener('hit',enemyType,playerAttackType);
     }
 
 
@@ -626,6 +752,7 @@ class MonsterScene extends GameScene {
             generate('soldier');
         }
 
-        camera.x += (player.position.x - camera.x)/2;
+        camera.x += (player.position.x - camera.x)/3.5;
+        // camera.y += (player.position.y - camera.y - 60)/12;
     }
 }
