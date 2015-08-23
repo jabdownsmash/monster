@@ -40,14 +40,19 @@ class MonsterScene extends GameScene {
         var blankType = new ObjectType();
         var playerType = new ObjectType();
         var enemyType = new ObjectType();
+        var enemyAttackType = new ObjectType();
 
+
+        var collider:Collider = Circle(0,0,80);
         var headOptions = {
             image: "assets/head.png",
             height: 130,
             jumpStrength: -10,
+            collider:collider,
             z: 3
         };
 
+        collider = None;
         var rightArmOptions = {
             image: "assets/rightarm.png",
             restingPosition: new Vec2(-40,70),
@@ -55,6 +60,7 @@ class MonsterScene extends GameScene {
             bobSpeed: 2,
             followSpeed: 1/6,
             type:blankType,
+            collider:collider,
             z: 10
         };
 
@@ -65,9 +71,11 @@ class MonsterScene extends GameScene {
             bobSpeed: 3,
             followSpeed: 1/6,
             type:blankType,
+            collider:collider,
             z: -5
         };
 
+        collider = Circle(0,-5,70);
         var bodyOptions = {
             image: "assets/body.png",
             restingPosition: new Vec2(-10,60),
@@ -75,6 +83,7 @@ class MonsterScene extends GameScene {
             bobSpeed: 4,
             followSpeed: 1/2,
             type:playerType,
+            collider:collider,
             z: -3
         };
 
@@ -92,6 +101,7 @@ class MonsterScene extends GameScene {
                     .setState(states.get('playerNormalAir'))
                     .addType(playerType)
                     .setZ(headOptions.z)
+                    .setCollider(headOptions.collider)
                     .setAttribute('randomColor',true)
                 ;
 
@@ -123,6 +133,7 @@ class MonsterScene extends GameScene {
                     .setAttribute('followSpeed',args[0].followSpeed)
                     .setAttribute('head',args[1])
                     .addType(args[0].type)
+                    .setCollider(args[0].collider)
                     .setZ(args[0].z)
                 ;
             });
@@ -174,14 +185,42 @@ class MonsterScene extends GameScene {
             {
                 var pos = Math.random()*30;
                 numSoldiers++;
+
+                var side = 1;
+                if(Math.random() > .5)
+                {
+                    side = -1;
+                }
                 return (new GameObject())
-                    .setPosition(new Vec2(player.position.x + sceneOptions.width/2 + 5 + Math.random()*100,sceneOptions.height/2 - 20 - pos))
+                    .setPosition(new Vec2(player.position.x + side*(sceneOptions.width/2 + 5 + Math.random()*100),sceneOptions.height/2 - 20 - pos))
                     .setGraphic(SpriteSheet("assets/soldier-runcycle.png", 16,14, [0,1,2,3],5, true))
                     .setState(states.get('soldierNormal'))
                     .addType(enemyType)
+                    .setAttribute('shotCounter',0)
                     .setZ(-pos/100)
                 ;
             });
+
+        addGenerator("bullet",function()
+            {
+                return (new GameObject())
+                    .setGraphic(Image("assets/bullet.png"))
+                    .setZ(100)
+                    .addType(enemyAttackType)
+                    .setCollider(Circle(0,0,1))
+                    .setState(states.get('bulletNormal'))
+                ;
+            });
+
+        states.get('bulletNormal')
+            .setUpdate(function(obj:GameObject)
+                {
+                    if(obj.position.y < -sceneOptions.height/2 - 3)
+                    {
+                        delete(obj);
+                    }
+                })
+        ;
 
         states.get('background')
             .setStart(function(obj:GameObject)
@@ -209,6 +248,14 @@ class MonsterScene extends GameScene {
                 })
         ;
 
+        states.get('playerVulnerable')
+            .onEvent('hit',function(obj:GameObject,event:GameEvent)
+                {
+                    // trace('')
+                    delete(event.collision.obj2);
+                })
+        ;
+
         states.get('playerHeadControl')
             .setUpdate(function(obj:GameObject)
                 {
@@ -217,6 +264,7 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('playerNormalAir')
+            .addParent(states.get('playerVulnerable'))
             .setUpdate(function(obj:GameObject)
                 {
                     if(obj.position.y > sceneOptions.height/2 - headOptions.height)
@@ -236,6 +284,7 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('playerNormalGround')
+            .addParent(states.get('playerVulnerable'))
             .setUpdate(function(obj:GameObject)
                 {
                     // obj.angle += .2;
@@ -259,6 +308,7 @@ class MonsterScene extends GameScene {
         ;
 
         states.get('restingBob')
+            .addParent(states.get('playerVulnerable'))
             .setUpdate(function(obj:GameObject)
                 {
                     var targetPosition:Vec2 = obj.getAttribute('head').position;
@@ -296,8 +346,20 @@ class MonsterScene extends GameScene {
                         delete(obj);
                         numSoldiers -= 1;
                     }
+                    obj.setAttribute('shotCounter',obj.getAttribute('shotCounter') - 1);
                 })
         ;
+
+        var shootFunc = function(obj:GameObject){
+                    if(obj.getAttribute('shotCounter') <= 0)
+                    {
+                        obj.setAttribute('shotCounter',200);
+                        generate('bullet')
+                            .setVelocity(player.position.sub(obj.position).add(new Vec2(0,Math.random()*100 - 50)).unit().mul(3))
+                            .setPosition(obj.position)
+                        ;
+                    }
+                };
 
         states.get('soldierNormal')
             .addParent(states.get('soldierScreen'))
@@ -309,6 +371,7 @@ class MonsterScene extends GameScene {
                 {
                     if(obj.position.x < player.position.x)
                     {
+                        obj.flip = true;
                         if(obj.position.x < player.position.x - 100 - obj.getAttribute('distanceDifference'))
                         {
                             obj.setVelocityX(1);
@@ -323,10 +386,12 @@ class MonsterScene extends GameScene {
                         else
                         {
                             obj.setVelocityX(-1);
+                            shootFunc(obj);
                         }
                     }
                     else
                     {
+                        obj.flip = false;
                         if(obj.position.x > player.position.x + 100 + obj.getAttribute('distanceDifference'))
                         {
                             obj.setVelocityX(-1);
@@ -341,6 +406,7 @@ class MonsterScene extends GameScene {
                         else
                         {
                             obj.setVelocityX(1);
+                            shootFunc(obj);
                         }
                     }
                 })
@@ -357,6 +423,14 @@ class MonsterScene extends GameScene {
                 })
             .setUpdate(function(obj:GameObject)
                 {
+                    if(obj.getAttribute('shotCounter') <= 0)
+                    {
+                        obj.setAttribute('shotCounter',200);
+                        generate('bullet')
+                            .setVelocity(player.position.sub(obj.position).add(new Vec2(0,Math.random()*100 - 20)).unit().mul(3))
+                            .setPosition(obj.position)
+                        ;
+                    }
                     if(!(obj.position.x == player.position.x - 100 - obj.getAttribute('distanceDifference') || obj.position.x == player.position.x + 100 + obj.getAttribute('distanceDifference')))
                     {
                         obj.setState(states.get('soldierNormal'));
@@ -364,6 +438,8 @@ class MonsterScene extends GameScene {
                 })
         ;
 
+
+        addInteractionStartListener('hit',playerType,enemyAttackType);
     }
 
 
