@@ -66,7 +66,7 @@ class MonsterScene extends GameScene {
 
         var leftArmOptions = {
             image: "assets/leftarm.png",
-            restingPosition: new Vec2(30,70),
+            restingPosition: new Vec2(30,60),
             bobHeight:10,
             bobSpeed: 3,
             followSpeed: 1/6,
@@ -84,7 +84,7 @@ class MonsterScene extends GameScene {
             followSpeed: 1/2,
             type:playerType,
             collider:collider,
-            z: -3
+            z: -.2
         };
 
         input
@@ -278,7 +278,12 @@ class MonsterScene extends GameScene {
         states.get('playerHeadControl')
             .setUpdate(function(obj:GameObject)
                 {
-                    obj.setAngularVel((input.getAxis('y')*30 - obj.angle)/10);
+                    var flip = 1;
+                    if(obj.flip)
+                    {
+                        flip = -1;
+                    }
+                    obj.setAngularVel((input.getAxis('y')*30*flip - obj.angle)/10);
                 })
         ;
 
@@ -411,7 +416,10 @@ class MonsterScene extends GameScene {
             .addParent(states.get('soldierScreen'))
             .setStart(function(obj:GameObject)
                 {
-                    obj.setAttribute('distanceDifference',Math.random()*Math.random()*150);
+                    obj
+                        .setAttribute('distanceDifference',Math.random()*Math.random()*150)
+                        .setGraphic(SpriteSheet("assets/soldier-runcycle.png", 16,14, [0,1,2,3],5, true))
+                    ;
                 })
             .setUpdate(function(obj:GameObject)
                 {
@@ -476,6 +484,7 @@ class MonsterScene extends GameScene {
                             .setVelocity(player.position.sub(obj.position).add(new Vec2(0,Math.random()*100 - 20)).unit().mul(3))
                             .setPosition(obj.position)
                         ;
+                        obj.setState(states.get('soldierNormal'));
                     }
                     if(!(obj.position.x == player.position.x - 100 - obj.getAttribute('distanceDifference') || obj.position.x == player.position.x + 100 + obj.getAttribute('distanceDifference')))
                     {
