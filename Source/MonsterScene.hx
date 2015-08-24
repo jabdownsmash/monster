@@ -35,11 +35,16 @@ class MonsterScene extends GameScene {
     var damagePerHit:Float = .003;
     var healPerHit:Float = .001;
 
+    var stopFollow = false;
+
     public var finished:Bool = false;
+    public var helpSpawned:Bool = false;
 
     public var score:Int = 0;
 
     public static var instructionsShown:Bool = false;
+
+    var kbInfo = {vel:0,angle:0,dmg:.1,red:false};
        
     public function new () {
 
@@ -104,8 +109,16 @@ class MonsterScene extends GameScene {
         input
             .registerAxis(KeyboardKeys.LEFT,KeyboardKeys.RIGHT,'x')
             .registerAxis(KeyboardKeys.UP,KeyboardKeys.DOWN,'y')
+            .registerAxis(KeyboardKeys.A,KeyboardKeys.D,'x')
+            .registerAxis(KeyboardKeys.W,KeyboardKeys.S,'y')
+            .registerAxis(KeyboardKeys.F,KeyboardKeys.G,'x')
+            .registerAxis(KeyboardKeys.NUMBER_4,KeyboardKeys.P,'y')
             .registerInput(KeyboardKeys.Z,'jump')
             .registerInput(KeyboardKeys.X,'attack')
+            .registerInput(KeyboardKeys.K,'jump')
+            .registerInput(KeyboardKeys.J,'attack')
+            .registerInput(KeyboardKeys.E,'jump')
+            .registerInput(KeyboardKeys.N,'attack')
         ;
 
         addGenerator("player",function()
@@ -127,6 +140,10 @@ class MonsterScene extends GameScene {
                 input                    
                     .registerFunction(Input.ONKEYDOWN,'jump', function()
                         {
+                            if(stopFollow)
+                            {
+                                finished = true;
+                            }
                             player.processEvent(new GameEvent("jump"));
                         })             
                     .registerFunction(Input.ONKEYDOWN,'attack', function()
@@ -252,6 +269,18 @@ class MonsterScene extends GameScene {
                 ;
             });
 
+        addGenerator('help',function()
+            {
+                helpSpawned = true;
+                return (new GameObject())
+                    .setGraphic(Image("assets/help" + Math.floor(Math.random()*5) + ".png"))
+                    .addType(blankType)
+                    .setState(states.get('helpState'))
+                    .setPosition(new Vec2(camera.x,camera.y - 400))
+                    .setZ(100)
+                ;
+            });
+
         addGenerator("bullet",function()
             {
                 return (new GameObject())
@@ -271,6 +300,16 @@ class MonsterScene extends GameScene {
                     .setState(states.get('playerAttackHitbox'))
                 ;
             });
+
+        states.get('helpState')
+            .setUpdate(function(obj:GameObject)
+                {
+                    if(obj.position.y < camera.y)
+                    {
+                        obj.translateY(10);
+                    }
+                })
+        ;
 
         states.get('playerAttackHitbox')
             .setUpdate(function(obj:GameObject)
@@ -327,6 +366,7 @@ class MonsterScene extends GameScene {
                         leftArm.setState(states.get('partDead'));
                         rightArm.setState(states.get('partDead'));
                         body.setState(states.get('partDead'));
+                        stopFollow = true;
                     }
                     delete(event.collision.obj2);
                 })
@@ -365,30 +405,33 @@ class MonsterScene extends GameScene {
         states.get('playerRed')
             .setUpdate(function(obj:GameObject)
                 {
-                    player
-                        .setAttribute('drawColorR',health*1)
-                        .setAttribute('drawColorB',0)
-                        .setAttribute('drawColorG',0)
-                        .setAttribute('drawColorA',1)
-                    ;
-                    leftArm
-                        .setAttribute('drawColorR',health*1)
-                        .setAttribute('drawColorB',0)
-                        .setAttribute('drawColorG',0)
-                        .setAttribute('drawColorA',1)
-                    ;
-                    rightArm
-                        .setAttribute('drawColorR',health*1)
-                        .setAttribute('drawColorB',0)
-                        .setAttribute('drawColorG',0)
-                        .setAttribute('drawColorA',1)
-                    ;
-                    body
-                        .setAttribute('drawColorR',health*1)
-                        .setAttribute('drawColorB',0)
-                        .setAttribute('drawColorG',0)
-                        .setAttribute('drawColorA',1)
-                    ;
+                    if(kbInfo.red)
+                    {
+                        player
+                            .setAttribute('drawColorR',health*1)
+                            .setAttribute('drawColorB',0)
+                            .setAttribute('drawColorG',0)
+                            .setAttribute('drawColorA',1)
+                        ;
+                        leftArm
+                            .setAttribute('drawColorR',health*1)
+                            .setAttribute('drawColorB',0)
+                            .setAttribute('drawColorG',0)
+                            .setAttribute('drawColorA',1)
+                        ;
+                        rightArm
+                            .setAttribute('drawColorR',health*1)
+                            .setAttribute('drawColorB',0)
+                            .setAttribute('drawColorG',0)
+                            .setAttribute('drawColorA',1)
+                        ;
+                        body
+                            .setAttribute('drawColorR',health*1)
+                            .setAttribute('drawColorB',0)
+                            .setAttribute('drawColorG',0)
+                            .setAttribute('drawColorA',1)
+                        ;
+                    }
                 })
         ;
 
@@ -411,7 +454,7 @@ class MonsterScene extends GameScene {
         states.get('playerNormal')
             .setUpdate(function(obj:GameObject)
                 {
-                    obj.setVelocityX(input.getAxis('x') * 5);
+                    obj.setVelocityX(input.getAxis('x') * 4);
                     if(input.getAxis('x') < 0)
                     {
                         obj.flip = true;
@@ -443,6 +486,7 @@ class MonsterScene extends GameScene {
 
                 })
             .addParent(states.get('playerHeadControl'))
+            .addTransition(states.get('playerAttackAir'),'attack')
         ;
 
         states.get('playerNormalGround')
@@ -462,27 +506,81 @@ class MonsterScene extends GameScene {
             .addParent(states.get('playerRed'))
             .setStart(function(obj)
                 {
-                    var leftArmEvent = new GameEvent('attack');
-                    leftArmEvent
-                        .setAttribute('move',true)
-                        .setAttribute('position',new Vec2(100,30 + 60*input.getAxis('y')))
-                        .setAttribute('vel',15.0)
-                        .setAttribute('duration',20)
-                        .setAttribute('type',playerAttackType)
-                    ;
-                    leftArm.processEvent(leftArmEvent);
+                    var flip = 1;
+                    if(obj.flip)
+                    {
+                        flip = -1;
+                    }
+                    if(input.getAxis('y') > 0)
+                    {
+                        var leftArmEvent = new GameEvent('attack');
+                        leftArmEvent
+                            .setAttribute('move',true)
+                            .setAttribute('chargePosition',new Vec2(120,100))
+                            .setAttribute('position',new Vec2(80,50))
+                            .setAttribute('vel',15.0)
+                            .setAttribute('angle',(-10))
+                            .setAttribute('chargeDuration',5)
+                            .setAttribute('duration',5)
+                            .setAttribute('type',playerAttackType)
+                        ;
+                        obj.setAttribute('timer',10);
+                        leftArm.processEvent(leftArmEvent);
+                        kbInfo = {angle:-90,vel:10,dmg:.1,red:false};
+                    }
+                    else if(input.getAxis('y') < 0)
+                    {
+                        var leftArmEvent = new GameEvent('attack');
+                        leftArmEvent
+                            .setAttribute('move',true)
+                            .setAttribute('chargePosition',new Vec2(80,-20))
+                            .setAttribute('position',new Vec2(20,-80))
+                            .setAttribute('vel',15.0)
+                            .setAttribute('angle',(45*input.getAxis('y') - 10))
+                            .setAttribute('chargeDuration',5)
+                            .setAttribute('duration',10)
+                            .setAttribute('type',playerAttackType)
+                        ;
+                        obj.setAttribute('timer',15);
+                        leftArm.processEvent(leftArmEvent);
+                        kbInfo = {angle:-90 - 20*flip,vel:10,dmg:.1,red:false};
+                    }
+                    else if(input.getAxis('x') == 0)
+                    {
+                        var leftArmEvent = new GameEvent('attack');
+                        leftArmEvent
+                            .setAttribute('move',true)
+                            .setAttribute('chargePosition',new Vec2(40,-40))
+                            .setAttribute('position',new Vec2(50,50))
+                            .setAttribute('vel',15.0)
+                            .setAttribute('angle',(-30))
+                            .setAttribute('chargeDuration',5)
+                            .setAttribute('duration',10)
+                            .setAttribute('type',playerAttackType)
+                        ;
+                        obj.setAttribute('timer',15);
+                        rightArm.processEvent(leftArmEvent);
+                        kbInfo = {angle:90 - 20*flip,vel:7,dmg:.1,red:false};
+                    }
+                    else
+                    {
+                        var leftArmEvent = new GameEvent('attack');
+                        leftArmEvent
+                            .setAttribute('move',true)
+                            .setAttribute('chargePosition',new Vec2(-10,30))
+                            .setAttribute('position',new Vec2(100,30))
+                            .setAttribute('vel',15.0)
+                            .setAttribute('angle',(-10))
+                            .setAttribute('chargeDuration',5)
+                            .setAttribute('duration',20)
+                            .setAttribute('type',playerAttackType)
+                        ;
+                        obj.setAttribute('timer',25);
+                        leftArm.processEvent(leftArmEvent);
+                        kbInfo = {angle:-90 + 70*flip,vel:10,dmg:1,red:true};
+                    }
 
-                    var otherEvent = new GameEvent('attack');
-                    otherEvent
-                        .setAttribute('move',false)
-                        .setAttribute('duration',20)
-                        .setAttribute('type',blankType)
-                    ;
-
-                    obj.setAttribute('timer',20);
-                        obj.setVelocity(new Vec2(0,0));
-                    // rightArm.processEvent(otherEvent);
-                    // body.processEvent(otherEvent);
+                    obj.setVelocity(new Vec2(0,0));
                 })
             .setUpdate(function(obj)
                 {
@@ -493,6 +591,110 @@ class MonsterScene extends GameScene {
                     }
                 })
         ;
+
+        states.get('playerAttackAir')
+            .addParent(states.get('playerRed'))
+            .setStart(function(obj)
+                {
+                    var flip = 1;
+                    if(obj.flip)
+                    {
+                        flip = -1;
+                    }
+                    var rightArmEvent = new GameEvent('attack');
+
+                    if(input.getAxis('y') < 0)
+                    {
+                        rightArmEvent
+                            .setAttribute('move',true)
+                            .setAttribute('chargePosition',new Vec2(50,10))
+                            .setAttribute('position',new Vec2(-50,-90))
+                            .setAttribute('vel',30.0)
+                            .setAttribute('angle',-90)
+                            .setAttribute('chargeDuration',10)
+                            .setAttribute('duration',10)
+                            .setAttribute('type',playerAttackType)
+                        ;
+                        kbInfo = {angle:-90 - 20*flip,vel:8,dmg:.1,red:false};
+                        obj.setAttribute('timer',20);
+                        rightArm.processEvent(rightArmEvent);
+                    }
+                    else if(input.getAxis('y') > 0)
+                    {
+                        rightArmEvent
+                            .setAttribute('move',true)
+                            .setAttribute('chargePosition',new Vec2(0,30))
+                            .setAttribute('position',new Vec2(10,150))
+                            .setAttribute('vel',30.0)
+                            .setAttribute('angle',(0))
+                            .setAttribute('chargeDuration',20)
+                            .setAttribute('duration',10)
+                            .setAttribute('type',playerAttackType)
+                        ;
+                        kbInfo = {angle:90 - 5*flip,vel:20,dmg:1,red:true};
+                        obj.setAttribute('timer',30);
+                        body.processEvent(rightArmEvent);
+                    }
+                    else if(input.getAxis('x') == 0)
+                    {
+                        rightArmEvent
+                            .setAttribute('move',true)
+                            .setAttribute('chargePosition',new Vec2(0,80))
+                            .setAttribute('position',new Vec2(50,-50))
+                            .setAttribute('vel',30.0)
+                            .setAttribute('angle',(-20))
+                            .setAttribute('chargeDuration',3)
+                            .setAttribute('duration',7)
+                            .setAttribute('type',playerAttackType)
+                        ;
+                        kbInfo = {angle:-90 + 18*flip,vel:7,dmg:.01,red:false};
+                        obj.setAttribute('timer',10);
+                        rightArm.processEvent(rightArmEvent);
+                    }
+                    else
+                    {
+                        rightArmEvent
+                            .setAttribute('move',true)
+                            .setAttribute('chargePosition',new Vec2(-5,40))
+                            .setAttribute('position',new Vec2(100,30))
+                            .setAttribute('vel',35.0)
+                            .setAttribute('angle',(-90))
+                            .setAttribute('chargeDuration',15)
+                            .setAttribute('duration',15)
+                            .setAttribute('type',playerAttackType)
+                        ;
+                        kbInfo = {angle:-90 + 90*flip,vel:20,dmg:.6,red:true};
+                        obj.setAttribute('timer',30);
+                        body.processEvent(rightArmEvent);
+                    }
+
+                    // if(input.getAxis('x') == 0)
+                    // {
+                    // }
+                    // else
+                    // {                               aorisetnaoiresntoairesntoarufntoayuwfhtoyauwhftoyauwhftoyauwnfotyauwnft
+                    //     rightArmEvent
+                    //         .setAttribute('position',new Vec2(130,30))
+                    //         .setAttribute('vel',15.0)
+                    //         .setAttribute('duration',10)
+                    //         .setAttribute('kbAngle',90)
+                    //     ;
+                    //     var chargeEvent = new GameEvent('charge')
+                    //     rightArm.setState('chargeAttack',);
+                    // }
+
+                        obj.setVelocity(new Vec2(0,0));
+                })
+            .setUpdate(function(obj)
+                {
+                    obj.setAttribute('timer',obj.getAttribute('timer') - 1);
+                    if(obj.getAttribute('timer') <= 0)
+                    {
+                        obj.setState(states.get('playerNormalAir'));
+                    }
+                })
+        ;
+
 
         states.get('playerJump')
             .setStart(function(obj:GameObject)
@@ -510,6 +712,10 @@ class MonsterScene extends GameScene {
             .setStart(function(obj:GameObject)
                 {
                     obj.addType(blankType);
+                    if(body != null)
+                    {
+                        body.addType(playerType);
+                    }
                 })
             .setUpdate(function(obj:GameObject)
                 {
@@ -541,12 +747,11 @@ class MonsterScene extends GameScene {
                     }
 
                     obj.setVelocity(velocity);
+                    obj.setAngle((-obj.angle)/7 + obj.angle);
 
                 })
-            .addTransition(states.get('partAttack'),'attack')
+            .addTransition(states.get('partCharge'),'attack')
         ;
-
-        var deadCounter = 600;
 
         states.get('partDead')
             .setStart(function(obj:GameObject)
@@ -565,11 +770,45 @@ class MonsterScene extends GameScene {
                     {
                         obj.setVelocityY(obj.velocity.y + sceneOptions.gravity);
                     }
-                    if(deadCounter-- < 0)
-                    {
-                        finished = true;
-                    }
                 })
+        ;
+
+        states.get('partCharge')
+            .setStart(function(obj:GameObject,event:GameEvent)
+                {
+                    obj.setAttribute('timer',event.getAttribute('chargeDuration'));
+                    obj.setAttribute('attackEvent',event);
+                })
+            .setUpdate(function(obj:GameObject)
+                {
+                    var flip = 1;
+                    var targetPosition:Vec2 = obj.getAttribute('attackEvent').getAttribute('chargePosition');
+                    targetPosition = targetPosition.copy();
+                    if(obj.flip)
+                    {
+                        targetPosition.x *= -1;
+                        flip = -1;
+                    }
+                    targetPosition.x += player.position.x;
+                    targetPosition.y += player.position.y;
+                    
+                    var velocity:Vec2 = targetPosition.sub(obj.position);
+
+                    if(velocity.length != 0)
+                    {
+                        velocity.length = velocity.length/4;
+                    }
+
+                    obj.setVelocity(velocity);
+                    obj.setAttribute('timer',obj.getAttribute('timer') - 1);
+                    if(obj.getAttribute('timer') <= 0)
+                    {
+                        var ev:GameEvent = obj.getAttribute('attackEvent');
+                        obj.processEvent(ev);
+                    }
+                    obj.setAngle((obj.getAttribute('attackEvent').getAttribute('angle')*flip - obj.angle)/3 + obj.angle);
+                })
+            .addTransition(states.get('partAttack'),'attack')
         ;
 
         states.get('partAttack')
@@ -680,19 +919,30 @@ class MonsterScene extends GameScene {
 
         states.get('soldierHit')
             .addParent(states.get('soldierHitGravity'))
-            .setStart(function(obj:GameObject)
+            .setStart(function(obj:GameObject,e:GameEvent)
                 {
                     if(obj.getAttribute('removed') == null)
                     {
                         obj.setAttribute('removed',true);
                         numSoldiers -=1;
                         score += 1;
-                        health -= healPerHit;
+                        obj.setAttribute('numHits',0);
                     }
-                    health += healPerHit;
-                    health += healPerHit;
+                    obj.setAttribute('numHits',Math.min(obj.getAttribute('numHits') + 1,5));
+                    obj
+                        .setAttribute('drawColorR',1)
+                        .setAttribute('drawColorG',1 - obj.getAttribute('numHits')/5)
+                        .setAttribute('drawColorB',1 - obj.getAttribute('numHits')/5)
+                        .setAttribute('drawColorA',1)
+                    ;
+                    health += healPerHit*obj.getAttribute('numHits')*obj.getAttribute('numHits') * kbInfo.dmg;
                     obj.setGraphic(SpriteSheet("assets/soldier-hit-up.png", 14,15, [0,1],1, true));
-                    obj.setVelocityY(-10);
+                    obj.setVelocity(
+                        Vec2.fromPolar(
+                            kbInfo.vel,
+                            kbInfo.angle/180*Math.PI
+                        ));
+                    // obj.setVelocityY(-10);
                     obj.setAttribute('timer',20);
                 })
             .setUpdate(function(obj:GameObject)
@@ -701,6 +951,13 @@ class MonsterScene extends GameScene {
                     if(obj.getAttribute('timer') <= 0)
                     {
                         obj.setState(states.get('soldierFlying'));
+                    }
+
+                    if(obj.position.y + obj.velocity.y >= sceneOptions.height/2 - 20 + obj.z*100)
+                    {
+                        // obj.position.y = sceneOptions.height/2 - 20 + obj.z*100;
+                        obj.position.y =  sceneOptions.height/2 - 20 + obj.z*100 - 5;
+                        obj.velocity.y = -(Math.min(obj.velocity.y*.8,13));
                     }
                     // finished = true;
                 })
@@ -884,7 +1141,17 @@ class MonsterScene extends GameScene {
             generate('soldier');
         }
 
-        camera.x += (player.position.x - camera.x)/3.5;
-        // camera.y += (player.position.y - camera.y - 60)/12;
+        if(!stopFollow)
+        {
+            camera.x += (player.position.x - camera.x)/3.5;
+            camera.y += ((player.position.y)/2 - camera.y)/3.5;
+        }
+        else
+        {
+            if(!helpSpawned)
+            {
+                generate('help');
+            }
+        }
     }
 }
