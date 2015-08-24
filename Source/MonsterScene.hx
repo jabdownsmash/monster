@@ -43,6 +43,7 @@ class MonsterScene extends GameScene {
     public var score:Int = 0;
 
     public var instructionsShown:Bool = false;
+    public var scrolledDown:Bool = false;
 
     var kbInfo = {vel:0,angle:0,dmg:.1,red:false};
        
@@ -140,7 +141,7 @@ class MonsterScene extends GameScene {
                 input                    
                     .registerFunction(Input.ONKEYDOWN,'jump', function()
                         {
-                            if(stopFollow)
+                            if(stopFollow && scrolledDown)
                             {
                                 finished = true;
                             }
@@ -148,7 +149,7 @@ class MonsterScene extends GameScene {
                         })             
                     .registerFunction(Input.ONKEYDOWN,'attack', function()
                         {
-                            if(stopFollow)
+                            if(stopFollow && scrolledDown)
                             {
                                 finished = true;
                             }
@@ -311,6 +312,10 @@ class MonsterScene extends GameScene {
                     if(obj.position.y < camera.y)
                     {
                         obj.translateY(10);
+                    }
+                    else
+                    {
+                        scrolledDown = true;
                     }
                 })
         ;
