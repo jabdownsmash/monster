@@ -148,6 +148,10 @@ class MonsterScene extends GameScene {
                         })             
                     .registerFunction(Input.ONKEYDOWN,'attack', function()
                         {
+                            if(stopFollow)
+                            {
+                                finished = true;
+                            }
                             player.processEvent(new GameEvent("attack"));
                         })
                 ;

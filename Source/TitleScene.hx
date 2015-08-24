@@ -42,7 +42,10 @@ class TitleScene extends GameScene {
         input
             .registerInput(KeyboardKeys.Z,'proceed')
             .registerInput(KeyboardKeys.J,'proceed')
+            .registerInput(KeyboardKeys.K,'proceed')
+            .registerInput(KeyboardKeys.X,'proceed')
             .registerInput(KeyboardKeys.N,'proceed')
+            .registerInput(KeyboardKeys.E,'proceed')
         ;
 
         addGenerator("screen",function()
