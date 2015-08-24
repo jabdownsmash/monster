@@ -42,7 +42,7 @@ class MonsterScene extends GameScene {
 
     public var score:Int = 0;
 
-    public static var instructionsShown:Bool = false;
+    public var instructionsShown:Bool = false;
 
     var kbInfo = {vel:0,angle:0,dmg:.1,red:false};
        
