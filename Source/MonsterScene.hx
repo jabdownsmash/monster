@@ -3,11 +3,7 @@ package ;
 
 // import openfl.display.Sprite;
 // import gtoolbox.KeyboardKeys;
-import nape.callbacks.*;
-
 import fluidity2.*;
-
-import nape.geom.Vec2;
 
 import evsm.FState;
 
@@ -37,6 +33,8 @@ class MonsterScene extends GameScene {
 
     var stopFollow = false;
 
+    var zoomCounter = 0;
+
     public var finished:Bool = false;
     public var helpSpawned:Bool = false;
 
@@ -44,6 +42,9 @@ class MonsterScene extends GameScene {
 
     public var instructionsShown:Bool = false;
     public var scrolledDown:Bool = false;
+
+    var followX = 0.0;
+    var followY = 0.0;
 
     var kbInfo = {vel:0,angle:0,dmg:.1,red:false};
        
@@ -953,6 +954,10 @@ class MonsterScene extends GameScene {
                         ));
                     // obj.setVelocityY(-10);
                     obj.setAttribute('timer',20);
+
+                    zoomCounter = 10;
+                    followX = obj.position.x;
+                    followY = obj.position.y;
                 })
             .setUpdate(function(obj:GameObject)
                 {
@@ -1152,8 +1157,20 @@ class MonsterScene extends GameScene {
 
         if(!stopFollow)
         {
-            camera.x += (player.position.x - camera.x)/3.5;
-            camera.y += ((player.position.y)/2 - camera.y)/3.5;
+            // if(zoomCounter > 0 && kbInfo.red)
+            // {
+            //     cameraScale += (2 - cameraScale)/8;
+            //     zoomCounter--;
+            //     camera.x += (followX - camera.x)/3.5;
+            //     camera.y += ((followY)/2 - camera.y)/3.5;
+            // }
+            // else
+            // {
+                cameraScale = 1;
+                zoomCounter = 0;
+                camera.x += (player.position.x - camera.x)/3.5;
+                camera.y += ((player.position.y)/2 - camera.y)/3.5;
+            // }
         }
         else
         {

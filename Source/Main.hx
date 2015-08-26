@@ -44,7 +44,7 @@ class Main extends Application {
 		
 	}
 
-	public override function render (context:RenderContext):Void {
+	public override function render (renderer):Void {
 
 		if(!started)
 		{
@@ -124,6 +124,9 @@ class Main extends Application {
 					if(gameScene.score > highScore)
 					{
 						highScore = gameScene.score;
+						#if js
+						untyped kongSubmit('highScore',highScore);
+						#end
 					}
 					var lgb = new LimeGraphicsBackend(window);
 					lgb.setCustom(customRenderer);
@@ -150,11 +153,47 @@ class Main extends Application {
 	}
 	
 	
-	public override function onKeyDown (key:KeyCode, modifier:KeyModifier):Void {
+	public override function onKeyDown (window,key:KeyCode, modifier:KeyModifier):Void {
 		limeInput.limeOnKeyDown(key);
 	}
-	public override function onKeyUp (key:KeyCode, modifier:KeyModifier):Void {
+	public override function onKeyUp (window,key:KeyCode, modifier:KeyModifier):Void {
 		limeInput.limeOnKeyUp(key);
+	}
+
+	public override function onTouchStart(touch)
+	{
+		titleScene.finished = true;
+		// if(gameScene == null)
+		// 	{
+		// 		gameScene = new MonsterScene();
+		// 		gameScene.start();
+		// 	}
+		// 	else
+		// 	{
+		// 		gameScene.update();
+		// 		gameScene.render();
+		// 		if(gameScene.finished)
+		// 		{
+		// 			if(gameScene.score > highScore)
+		// 			{
+		// 				highScore = gameScene.score;
+		// 			}
+		// 			var lgb = new LimeGraphicsBackend(window);
+		// 			lgb.setCustom(customRenderer);
+
+		// 			Backend.graphics = lgb;
+		// 			Backend.physics = new SimplePhysicsBackend();
+		// 			limeInput = new LimeInput();
+		// 			Backend.input = limeInput;
+
+		// 			// scene = new MonsterScene();
+		// 			titleScene = new TitleScene();
+
+		// 			titleScene.start();
+
+		// 			gameScene = null;
+		// 		}
+		// 	}
 	}
 	
 }

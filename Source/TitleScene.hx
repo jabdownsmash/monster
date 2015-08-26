@@ -1,13 +1,6 @@
 package ;
 
-
-// import openfl.display.Sprite;
-// import gtoolbox.KeyboardKeys;
-import nape.callbacks.*;
-
 import fluidity2.*;
-
-import nape.geom.Vec2;
 
 import evsm.FState;
 
