@@ -1,15 +1,14 @@
 package ;
 
-import fluidity2.*;
+import fluidity.*;
 
-import evsm.FState;
+import fluidity.utils.KeyboardKeys;
+import fluidity.backends.Input;
 
-import gtoolbox.KeyboardKeys;
-import gtoolbox.Input;
+import fluidity.utils.Vec2;
+import fluidity.utils.AdMob;
 
 class TitleScene extends GameScene {
-
-    var bobCounter = 0.0;
 
     var sceneOptions = {
         width: 400,
@@ -18,6 +17,7 @@ class TitleScene extends GameScene {
     }
 
     public var finished:Bool = false;
+    var interstitialId:String = "ca-app-pub-1216976235802236/6076892504";
 
     public var screenObjects:Array<GameObject> = [];
        
@@ -25,21 +25,7 @@ class TitleScene extends GameScene {
 
         super (new Vec2(0,0));
 
-        var states = new StringBin<FState<GameObject,GameEvent>>(function(name:String)
-            {
-                return new FState<GameObject,GameEvent>(name);
-            });
-
         var blankType = new ObjectType();
-
-        input
-            .registerInput(KeyboardKeys.Z,'proceed')
-            .registerInput(KeyboardKeys.J,'proceed')
-            .registerInput(KeyboardKeys.K,'proceed')
-            .registerInput(KeyboardKeys.X,'proceed')
-            .registerInput(KeyboardKeys.N,'proceed')
-            .registerInput(KeyboardKeys.E,'proceed')
-        ;
 
         addGenerator("screen",function()
             {
@@ -108,6 +94,7 @@ class TitleScene extends GameScene {
                         delete(object);
                     }
                     screenObjects = [];
+                    GameLayer.sendEventToLayers(new GameEvent('titleFinished'));
                     finished = true;
                 })
         ;
@@ -145,6 +132,22 @@ class TitleScene extends GameScene {
 
     public override function onStart()
     {
+        AdMob.showInterstitial(interstitialId);
+        if(MonsterScene.score > Main.highScore)
+        {
+            Main.highScore = MonsterScene.score;
+            fluidity.utils.Kongregate.submit('highScore',Main.highScore);
+        }
+
+        input
+            .registerInput(KeyboardKeys.Z,'proceed')
+            .registerInput(KeyboardKeys.J,'proceed')
+            .registerInput(KeyboardKeys.K,'proceed')
+            .registerInput(KeyboardKeys.X,'proceed')
+            .registerInput(KeyboardKeys.N,'proceed')
+            .registerInput(KeyboardKeys.E,'proceed')
+        ;
+
         screenObjects = [generate('screen'), generate('name'),generate('press')];
 
         var kek:Int = Main.highScore;
@@ -169,5 +172,6 @@ class TitleScene extends GameScene {
                 .setGraphic(Image('assets/hiscore.png'))
             );
         }
+        AdMob.cacheInterstitial(interstitialId);
     }
 }

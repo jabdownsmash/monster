@@ -6,28 +6,34 @@ import lime.graphics.RenderContext;
 import lime.ui.KeyCode;
 import lime.ui.KeyModifier;
 
-import fluidity2.Backend;
-import fluidity2.backends.*;
-import fluidity2.GameScene;
-import fluidity2.GameObject;
+import fluidity.backends.Backend;
+import fluidity.backends.lime.CustomRenderer;
+import fluidity.backends.GraphicsLime;
+import fluidity.backends.PhysicsSimple;
+import fluidity.GameScene;
+import fluidity.GameObject;
+import fluidity.GameLayer;
 
-import gtoolbox.LimeInput;
+import fluidity.backends.LimeInput;
 
 import lime.graphics.opengl.GL;
 import lime.graphics.opengl.GLProgram;
 
 import lime.Assets;
 
+import fluidity.utils.AdMob;
 
 class Main extends Application {
 	
 	var titleScene:TitleScene;
 	var gameScene:MonsterScene;
 
+	var layer:GameLayer;
+
 	var started = false;
 
 	var limeInput:LimeInput;
-		var customRenderer:CustomRenderer;
+	var customRenderer:CustomRenderer;
 
 	public static var highScore = 0; 
 
@@ -38,10 +44,15 @@ class Main extends Application {
 	public static var drawColorB:Float = 1;
 	public static var drawColorA:Float = 1;
 	
+	var interstitialId:String = "ca-app-pub-1216976235802236/6076892504";
+	var bannerId:String = "ca-app-pub-1216976235802236/7374032503";
+
 	public function new () {
 		
 		super ();
 		
+		AdMob.init();
+		AdMob.cacheInterstitial(interstitialId);
 	}
 
 	public override function render (renderer):Void {
@@ -63,8 +74,6 @@ class Main extends Application {
 	            {
 	                vec4 texel = texture2D(uImage0, vTexCoord) * uColor;
 	            	
-					if(texel.a < 0.5)
-					    discard;
 					gl_FragColor = texel;
 
 	            }";
@@ -95,75 +104,36 @@ class Main extends Application {
 			started = true;
 
 			
-			var lgb = new LimeGraphicsBackend(window);
+			var lgb = new GraphicsLime(window);
 			lgb.setCustom(customRenderer);
 
 			Backend.graphics = lgb;
-			Backend.physics = new SimplePhysicsBackend();
+			Backend.physics = new PhysicsSimple();
 			limeInput = new LimeInput();
 			Backend.input = limeInput;
 
+			layer = new GameLayer();
+
+			// layer.vWidth = 400;
+			// layer.vHeight = 300;
+
+			layer
+				.addScene('title',new TitleScene())
+				.addScene('monster',new MonsterScene())
+				.addTransition('titleFinished','title','monster')
+				// .addTransition('monsterFinished','monster','title')
+				.addTransition('monsterFinished','monster',true,'title',true)
+				.start('title')
+			;
+
 			// scene = new MonsterScene();
-			titleScene = new TitleScene();
+			// titleScene = new TitleScene();
 
-			titleScene.start();
+			// titleScene.start();
 		}
-		if(titleScene.finished)
-		{
-			if(gameScene == null)
-			{
-				gameScene = new MonsterScene();
-				gameScene.start();
-			}
-			else
-			{
-				gameScene.update();
-				gameScene.render();
-				if(gameScene.finished)
-				{
-					if(gameScene.score > highScore)
-					{
-						highScore = gameScene.score;
-						#if js
-						untyped kongSubmit('highScore',highScore);
-						#end
-					}
-					var lgb = new LimeGraphicsBackend(window);
-					lgb.setCustom(customRenderer);
-
-					Backend.graphics = lgb;
-					Backend.physics = new SimplePhysicsBackend();
-					limeInput = new LimeInput();
-					Backend.input = limeInput;
-
-					// scene = new MonsterScene();
-					titleScene = new TitleScene();
-
-					titleScene.start();
-
-					gameScene = null;
-				}
-			}
-		}
-		else
-		{
-			titleScene.update();
-			titleScene.render();
-		}
-	}
-	
-	
-	public override function onKeyDown (window,key:KeyCode, modifier:KeyModifier):Void {
-		limeInput.limeOnKeyDown(key);
-	}
-	public override function onKeyUp (window,key:KeyCode, modifier:KeyModifier):Void {
-		limeInput.limeOnKeyUp(key);
-	}
-
-	public override function onTouchStart(touch)
-	{
-		titleScene.finished = true;
-		// if(gameScene == null)
+		// if(titleScene.finished)
+		// {
+		// 	if(gameScene == null)
 		// 	{
 		// 		gameScene = new MonsterScene();
 		// 		gameScene.start();
@@ -177,12 +147,67 @@ class Main extends Application {
 		// 			if(gameScene.score > highScore)
 		// 			{
 		// 				highScore = gameScene.score;
+		// 				fluidity.utils.Kongregate.submit('highScore',highScore);
 		// 			}
-		// 			var lgb = new LimeGraphicsBackend(window);
+		// 			var lgb = new GraphicsLime(window);
 		// 			lgb.setCustom(customRenderer);
 
 		// 			Backend.graphics = lgb;
-		// 			Backend.physics = new SimplePhysicsBackend();
+		// 			Backend.physics = new PhysicsSimple();
+		// 			limeInput = new LimeInput();
+		// 			Backend.input = limeInput;
+
+		// 			// scene = new MonsterScene();
+		// 			titleScene = new TitleScene();
+
+		// 			titleScene.start();
+
+		// 			gameScene = null;
+
+		// 		    AdMob.showInterstitial(interstitialId);
+		// 		}
+		// 	}
+		// }
+		// else
+		// {
+		// 	titleScene.update();
+		// 	titleScene.render();
+		// }
+		layer.update().render();
+	}
+	
+	
+	public override function onKeyDown (window,key:KeyCode, modifier:KeyModifier):Void {
+		limeInput.limeOnKeyDown(key);
+	}
+	public override function onKeyUp (window,key:KeyCode, modifier:KeyModifier):Void {
+		limeInput.limeOnKeyUp(key);
+	}
+
+	public override function onTouchStart(touch)
+	{
+		titleScene.finished = true;
+		if(gameScene != null)
+			{
+				// gameScene = new MonsterScene();
+				// gameScene.start();
+				gameScene.finished = true;
+			}
+		// 	else
+		// 	{
+		// 		gameScene.update();
+		// 		gameScene.render();
+		// 		if(gameScene.finished)
+		// 		{
+		// 			if(gameScene.score > highScore)
+		// 			{
+		// 				highScore = gameScene.score;
+		// 			}
+		// 			var lgb = new GraphicsLime(window);
+		// 			lgb.setCustom(customRenderer);
+
+		// 			Backend.graphics = lgb;
+		// 			Backend.physics = new PhysicsSimple();
 		// 			limeInput = new LimeInput();
 		// 			Backend.input = limeInput;
 

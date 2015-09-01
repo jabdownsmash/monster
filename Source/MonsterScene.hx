@@ -3,12 +3,13 @@ package ;
 
 // import openfl.display.Sprite;
 // import gtoolbox.KeyboardKeys;
-import fluidity2.*;
+import fluidity.*;
 
-import evsm.FState;
+import fluidity.utils.KeyboardKeys;
+import fluidity.backends.Input;
 
-import gtoolbox.KeyboardKeys;
-import gtoolbox.Input;
+import fluidity.utils.Vec2;
+import fluidity.utils.StringBin;
 
 class MonsterScene extends GameScene {
 
@@ -38,7 +39,7 @@ class MonsterScene extends GameScene {
     public var finished:Bool = false;
     public var helpSpawned:Bool = false;
 
-    public var score:Int = 0;
+    public static var score:Int = 0;
 
     public var instructionsShown:Bool = false;
     public var scrolledDown:Bool = false;
@@ -51,11 +52,6 @@ class MonsterScene extends GameScene {
     public function new () {
 
         super (new Vec2(0,0));
-
-        var states = new StringBin<FState<GameObject,GameEvent>>(function(name:String)
-            {
-                return new FState<GameObject,GameEvent>(name);
-            });
 
         var blankType = new ObjectType();
         var playerType = new ObjectType();
@@ -82,7 +78,7 @@ class MonsterScene extends GameScene {
             followSpeed: 1/6,
             type:blankType,
             collider:collider,
-            z: 10
+            z: 100
         };
 
         var leftArmOptions = {
@@ -108,21 +104,6 @@ class MonsterScene extends GameScene {
             z: -.2
         };
 
-        input
-            .registerAxis(KeyboardKeys.LEFT,KeyboardKeys.RIGHT,'x')
-            .registerAxis(KeyboardKeys.UP,KeyboardKeys.DOWN,'y')
-            .registerAxis(KeyboardKeys.A,KeyboardKeys.D,'x')
-            .registerAxis(KeyboardKeys.W,KeyboardKeys.S,'y')
-            .registerAxis(KeyboardKeys.F,KeyboardKeys.G,'x')
-            .registerAxis(KeyboardKeys.NUMBER_4,KeyboardKeys.P,'y')
-            .registerInput(KeyboardKeys.Z,'jump')
-            .registerInput(KeyboardKeys.X,'attack')
-            .registerInput(KeyboardKeys.K,'jump')
-            .registerInput(KeyboardKeys.J,'attack')
-            .registerInput(KeyboardKeys.E,'jump')
-            .registerInput(KeyboardKeys.N,'attack')
-        ;
-
         addGenerator("player",function()
             {
                 player = (new GameObject())
@@ -137,25 +118,6 @@ class MonsterScene extends GameScene {
                     .setAttribute('drawColorG',0)
                     .setAttribute('drawColorB',0)
                     .setAttribute('drawColorA',1)
-                ;
-
-                input                    
-                    .registerFunction(Input.ONKEYDOWN,'jump', function()
-                        {
-                            if(stopFollow && scrolledDown)
-                            {
-                                finished = true;
-                            }
-                            player.processEvent(new GameEvent("jump"));
-                        })             
-                    .registerFunction(Input.ONKEYDOWN,'attack', function()
-                        {
-                            if(stopFollow && scrolledDown)
-                            {
-                                finished = true;
-                            }
-                            player.processEvent(new GameEvent("attack"));
-                        })
                 ;
 
                 rightArm = generate("part",[rightArmOptions])
@@ -185,15 +147,20 @@ class MonsterScene extends GameScene {
 
         addGenerator("part",function(args:Array<Dynamic>)
             {
-                return (new GameObject())
-                    .setGraphic(Image(args[0].image))
-                    .setScale(1/4)
-                    .setState(states.get('restingBob'))
-                    .setAttribute('restingPosition',args[0].restingPosition)
-                    .setAttribute('bobHeight',args[0].bobHeight)
-                    .setAttribute('bobSpeed',args[0].bobSpeed)
-                    .setAttribute('followSpeed',args[0].followSpeed)
+                var jesus = (new GameObject());
+                    jesus.setGraphic(Image(args[0].image));
+                    jesus.setScale(1/4);
+                    jesus.setState(states.get('restingBob'));
+                    jesus.setAttribute('restingPosition',args[0].restingPosition);
+                    jesus.setAttribute('bobHeight',args[0].bobHeight);
+                    jesus.setAttribute('bobSpeed',args[0].bobSpeed);
+                    jesus.setAttribute('followSpeed',args[0].followSpeed);
+
+                jesus
                     .addType(args[0].type)
+                ;
+
+                return jesus
                     .setCollider(args[0].collider)
                     .setZ(args[0].z)
                 ;
@@ -367,11 +334,9 @@ class MonsterScene extends GameScene {
         states.get('playerVulnerable')
             .onEvent('hit',function(obj:GameObject,event:GameEvent)
                 {
-                    // trace('')
                     health -= damagePerHit;
                     if(health <= 0)
                     {
-                        // finished = true;
                         player.setState(states.get('partDead'));
                         leftArm.setState(states.get('partDead'));
                         rightArm.setState(states.get('partDead'));
@@ -840,7 +805,8 @@ class MonsterScene extends GameScene {
                     if(event.getAttribute('type') == playerAttackType)
                     {
                         obj.setAttribute('hasHitbox',true);
-                        obj.setAttribute('hitbox',generate('playerAttackHitbox',[obj])
+                        obj
+                        .setAttribute('hitbox',generate('playerAttackHitbox',[obj])
                                                     .setCollider(Circle(0,0,20)));
                     }
                     // obj.addType(event.getAttribute('type'));
@@ -994,10 +960,10 @@ class MonsterScene extends GameScene {
             .setStart(function(obj:GameObject)
                 {
                     obj.setAttribute('timer',100)
-                        .setAttribute('drawColorR',1)
-                        .setAttribute('drawColorG',1)
-                        .setAttribute('drawColorB',1)
-                        .setAttribute('drawColorA',1)
+                        // .setAttribute('drawColorR',1)
+                        // .setAttribute('drawColorG',1)
+                        // .setAttribute('drawColorB',1)
+                        // .setAttribute('drawColorA',1)
                     ;
                     obj.setGraphic(Image("assets/soldier-dead.png"));
                     obj.setVelocity(new Vec2(0,0));
@@ -1006,10 +972,10 @@ class MonsterScene extends GameScene {
                 {
                     obj
                         .setAttribute('timer',obj.getAttribute('timer') - 1)
-                        // .setAttribute('drawColorA',obj.getAttribute('timer')/100)
-                        .setAttribute('drawColorR',obj.getAttribute('timer')/100)
-                        .setAttribute('drawColorG',obj.getAttribute('timer')/100)
-                        .setAttribute('drawColorB',obj.getAttribute('timer')/100)
+                        .setAttribute('drawColorA',obj.getAttribute('timer')/100)
+                        // .setAttribute('drawColorR',obj.getAttribute('timer')/100)
+                        // .setAttribute('drawColorG',obj.getAttribute('timer')/100)
+                        // .setAttribute('drawColorB',obj.getAttribute('timer')/100)
                     ;
                     if(obj.getAttribute('timer') <= 0)
                     {
@@ -1118,6 +1084,43 @@ class MonsterScene extends GameScene {
 
     public override function onStart()
     {
+
+        numSoldiers = 0;
+        maxSoldiers = 200;
+
+        health = 1;
+        damagePerHit = .003;
+        healPerHit = .001;
+
+        stopFollow = false;
+
+        zoomCounter = 0;
+
+        finished = false;
+        helpSpawned = false;
+
+        score = 0;
+
+        instructionsShown = false;
+        scrolledDown = false;
+
+        followX = 0.0;
+        followY = 0.0;
+
+        input
+            .registerAxis(KeyboardKeys.LEFT,KeyboardKeys.RIGHT,'x')
+            .registerAxis(KeyboardKeys.UP,KeyboardKeys.DOWN,'y')
+            .registerAxis(KeyboardKeys.A,KeyboardKeys.D,'x')
+            .registerAxis(KeyboardKeys.W,KeyboardKeys.S,'y')
+            .registerAxis(KeyboardKeys.F,KeyboardKeys.G,'x')
+            .registerAxis(KeyboardKeys.NUMBER_4,KeyboardKeys.P,'y')
+            .registerInput(KeyboardKeys.Z,'jump')
+            .registerInput(KeyboardKeys.X,'attack')
+            .registerInput(KeyboardKeys.K,'jump')
+            .registerInput(KeyboardKeys.J,'attack')
+            .registerInput(KeyboardKeys.E,'jump')
+            .registerInput(KeyboardKeys.N,'attack')
+        ;
         generate('player');
 
         generate('skyBackground',[-sceneOptions.width/2]);
@@ -1143,6 +1146,34 @@ class MonsterScene extends GameScene {
         {
             generate('instructionSign');
         }
+
+        input                    
+            .registerFunction(Input.ONKEYDOWN,'jump', function()
+                {
+                    if(stopFollow && scrolledDown)
+                    {
+                        finished = true;
+                    }
+                    player.processEvent(new GameEvent("jump"));
+                })             
+            .registerFunction(Input.ONKEYDOWN,'attack', function()
+                {
+                    if(stopFollow && scrolledDown)
+                    {
+                        finished = true;
+                    }
+                    player.processEvent(new GameEvent("attack"));
+                })
+        ;
+
+    }
+
+    public override function onReset()
+    {
+        body = null;
+        leftArm = null;
+        rightArm = null;
+        player = null;
     }
 
     public override function onUpdate()
@@ -1178,6 +1209,11 @@ class MonsterScene extends GameScene {
             {
                 generate('help');
             }
+        }
+
+        if(finished)
+        {
+            GameLayer.sendEventToLayers(new GameEvent('monsterFinished'));
         }
     }
 }

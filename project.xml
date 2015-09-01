@@ -9,8 +9,10 @@
 	
 	<haxelib name="lime" />
 	<haxelib name="fluidity2" />
-	<haxelib name="evsm" />
-	<haxelib name="gtoolbox" />
+	<!-- <haxelib name="evsm" /> -->
+
+
+	<setenv name="AdmobTestDeviceId" value="7E0E4F8982F2EF471993D9ADC34AC2B7" if="android"/>
 	
 	<assets path="Assets" rename="assets" />
 	
