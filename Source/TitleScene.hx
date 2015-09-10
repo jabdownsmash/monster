@@ -2,8 +2,8 @@ package ;
 
 import fluidity.*;
 
-import fluidity.utils.KeyboardKeys;
-import fluidity.backends.Input;
+import fluidity.input.KeyboardKeys;
+import fluidity.Input;
 
 import fluidity.utils.Vec2;
 import fluidity.utils.AdMob;
@@ -40,7 +40,7 @@ class TitleScene extends GameScene {
                 ;
 
                 input                    
-                    .registerFunction(Input.ONKEYDOWN,'proceed', function()
+                    .registerFunctionOnKeyDown('proceed', function()
                         {
                             screen.processEvent(new GameEvent("proceed"));
                         })    

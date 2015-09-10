@@ -3,13 +3,15 @@
 	
 	<meta title="Monster" package="com.sample.monster" version="1.0.0" company="Company Name" />
 	<app main="Main" path="Export" file="Monster" />
-	<!-- <window depth-buffer="true" /> -->
+	<!-- <haxedef name="depthbuffer" /> -->
+	<window depth-buffer="true" if="depthbuffer"/>
 	
 	<source path="Source" />
 	
 	<haxelib name="lime" />
 	<haxelib name="fluidity2" />
 	<!-- <haxelib name="evsm" /> -->
+
 
 
 	<setenv name="AdmobTestDeviceId" value="7E0E4F8982F2EF471993D9ADC34AC2B7" if="android"/>

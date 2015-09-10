@@ -5,8 +5,8 @@ package ;
 // import gtoolbox.KeyboardKeys;
 import fluidity.*;
 
-import fluidity.utils.KeyboardKeys;
-import fluidity.backends.Input;
+import fluidity.input.KeyboardKeys;
+import fluidity.Input;
 
 import fluidity.utils.Vec2;
 import fluidity.utils.StringBin;
@@ -103,6 +103,17 @@ class MonsterScene extends GameScene {
             collider:collider,
             z: -.2
         };
+
+        addGenerator("name",function()
+            {
+                return (new GameObject())
+                    .setGraphic(Image('assets/madeby.png'))
+                    .setPosition(new Vec2(-120,140))
+                    .setState(states.get('blank'))
+                    .addType(blankType)
+                    .setZ(-100)
+                ;
+            });
 
         addGenerator("player",function()
             {
@@ -1148,7 +1159,7 @@ class MonsterScene extends GameScene {
         }
 
         input                    
-            .registerFunction(Input.ONKEYDOWN,'jump', function()
+            .registerFunctionOnKeyDown('jump', function()
                 {
                     if(stopFollow && scrolledDown)
                     {
@@ -1156,7 +1167,7 @@ class MonsterScene extends GameScene {
                     }
                     player.processEvent(new GameEvent("jump"));
                 })             
-            .registerFunction(Input.ONKEYDOWN,'attack', function()
+            .registerFunctionOnKeyDown('attack', function()
                 {
                     if(stopFollow && scrolledDown)
                     {
