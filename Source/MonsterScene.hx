@@ -131,6 +131,13 @@ class MonsterScene extends GameScene {
                     .setAttribute('drawColorA',1)
                 ;
 
+                    // player.processEvent(new GameEvent("jump"));
+
+                input
+                    .registerObjectOnKeyDown("jump",player,"jump")
+                    .registerObjectOnKeyDown("attack",player,"attack")
+                ;
+
                 rightArm = generate("part",[rightArmOptions])
                     .setAttribute('randomColor',false)
                     .setAttribute('drawColorR',1.2)
@@ -1165,7 +1172,6 @@ class MonsterScene extends GameScene {
                     {
                         finished = true;
                     }
-                    player.processEvent(new GameEvent("jump"));
                 })             
             .registerFunctionOnKeyDown('attack', function()
                 {
@@ -1173,7 +1179,6 @@ class MonsterScene extends GameScene {
                     {
                         finished = true;
                     }
-                    player.processEvent(new GameEvent("attack"));
                 })
         ;
 
