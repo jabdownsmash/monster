@@ -11,8 +11,6 @@ import fluidity.GameObject;
 import fluidity.GameLayer;
 import fluidity.GameEvent;
 
-import fluidity.backends.LimeInput;
-
 import lime.graphics.opengl.GL;
 import lime.graphics.opengl.GLProgram;
 
@@ -52,6 +50,8 @@ class Main extends LimeGameManager {
             void main(void)
             {
                 vec4 texel = texture2D(uImage0, vTexCoord) * uColor;
+                if (texel.a < 0.1)
+                    discard; 
 				gl_FragColor = texel;
 
             }";
@@ -75,12 +75,12 @@ class Main extends LimeGameManager {
 		        	GL.uniform4f (colorUniform, obj.getAttribute('drawColorR'),obj.getAttribute('drawColorG'),obj.getAttribute('drawColorB'),obj.getAttribute('drawColorA'));
 				}
 			};
-		#if android
-		layers.get('overlay')
-			.addScene('overlay',new OverlayScene())
-			.start('overlay')
-		;
-		#end
+		// #if android
+		// layers.get('overlay')
+		// 	.addScene('overlay',new OverlayScene())
+		// 	.start('overlay')
+		// ;
+		// #end
 
 		lgb.setCustom(layers.get('game'),customRenderer);
 
@@ -106,22 +106,22 @@ class Main extends LimeGameManager {
 		var top = 400/3020*tHeight;
 		var bottom = 1270/3020*tHeight;
 
-		#if android
-		layers.get('overlay')
-			.setVDimensions(1840,3020)
-			.setDimensions(tWidth,tHeight)
-		;
-		#end
+		// #if android
+		// layers.get('overlay')
+		// 	.setVDimensions(1840,3020)
+		// 	.setDimensions(tWidth,tHeight)
+		// ;
+		// #end
 
 		layers.get('game')
 			.setVDimensions(400,300)
-			#if android
-			.setDimensions(Math.floor(right - left),Math.floor(bottom - top))
-			.setY(-Math.floor(tHeight/2 - (bottom + top)/2))
-			#else
-			.setDimensions(Backend.graphics.width,Math.floor(Backend.graphics.width*3/4))
-			.setY(Math.floor(-Backend.graphics.height/2 + 300))
-			#end
+			// #if android
+			// .setDimensions(Math.floor(right - left),Math.floor(bottom - top))
+			// .setY(-Math.floor(tHeight/2 - (bottom + top)/2))
+			// #else
+			// .setDimensions(800,600)
+			// .setY(Math.floor(-Backend.graphics.height/2 + 300))
+			// #end
 		;
 	}
 }

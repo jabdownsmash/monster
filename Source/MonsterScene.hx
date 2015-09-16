@@ -22,7 +22,7 @@ class MonsterScene extends GameScene {
     }
 
     var numSoldiers:Int = 0;
-    var maxSoldiers:Int = 200;
+    var maxSoldiers:Int = 100;
     var player:GameObject;
     var leftArm:GameObject;
     var rightArm:GameObject;
@@ -1104,7 +1104,7 @@ class MonsterScene extends GameScene {
     {
 
         numSoldiers = 0;
-        maxSoldiers = 200;
+        // maxSoldiers = 200;
 
         health = 1;
         damagePerHit = .003;
@@ -1204,20 +1204,20 @@ class MonsterScene extends GameScene {
 
         if(!stopFollow)
         {
-            // if(zoomCounter > 0 && kbInfo.red)
-            // {
-            //     cameraScale += (2 - cameraScale)/8;
-            //     zoomCounter--;
-            //     camera.x += (followX - camera.x)/3.5;
-            //     camera.y += ((followY)/2 - camera.y)/3.5;
-            // }
-            // else
-            // {
+            if(zoomCounter > 0 && kbInfo.red)
+            {
+                cameraScale += (2 - cameraScale)/8;
+                zoomCounter--;
+                camera.x += (followX - camera.x)/3.5;
+                camera.y += ((followY)/2 - camera.y)/3.5;
+            }
+            else
+            {
                 cameraScale = 1;
                 zoomCounter = 0;
                 camera.x += (player.position.x - camera.x)/3.5;
                 camera.y += ((player.position.y)/2 - camera.y)/3.5;
-            // }
+            }
         }
         else
         {

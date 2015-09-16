@@ -3,8 +3,7 @@
 	
 	<meta title="Monster" package="com.sample.monster" version="1.0.0" company="Company Name" />
 	<app main="Main" path="Export" file="Monster" />
-	<!-- <haxedef name="depthbuffer" /> -->
-	<window depth-buffer="true" if="depthbuffer"/>
+	<window depth-buffer="true"/>
 	
 	<source path="Source" />
 	
